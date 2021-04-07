@@ -1,0 +1,22 @@
+/.project
+/.vs/
+**/bin/
+**/obj/
+**/artifacts/
+**/project.lock.json
+**/appsettings.Development.json
+**/.vscode/
+**/wwwroot/lib/
+**/*.xproj.user
+**/*.csproj.user
+**/aspnet_consul_config.json
+/.cr
+
+# MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user

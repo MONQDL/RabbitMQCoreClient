@@ -1,0 +1,61 @@
+name: NetCore-Library
+
+# Run this workflow every time a new commit pushed to your repository
+on: 
+  push:
+    # Sequence of patterns matched against refs/heads
+    branches:    
+      # Push events on main branch
+      - master
+      - develop
+
+jobs:
+  # Set the job key. The key is displayed as the job name
+  # when a job name is not provided
+  build-and-publish:
+    # Name the Job
+    name: Build and Publish Library
+    # Set the type of machine to run on
+    runs-on: ubuntu-latest
+    env:
+      MAINAPP_ASP_PROJECT_PATH: "src/RabbitMQCoreClient"
+      TEST_MAINAPP_ASP_PROJECT_PATH: "src/RabbitMQCoreClient.Tests"
+
+    steps:
+      # Checks out a copy of your repository on the ubuntu-latest machine
+      - uses: actions/checkout@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.x
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build -c Release --no-restore
+      - name: Test
+        run: |
+          dotnet add $TEST_MAINAPP_ASP_PROJECT_PATH package coverlet.msbuild --version ${coverletMsbuildVersion:-3.0.3} > /dev/null 2>&1
+          dotnet test $TEST_MAINAPP_ASP_PROJECT_PATH -c Release --no-build --no-restore /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=../../build_report/opencover.xml
+      - name: Pack Alpha
+        if: github.ref == 'refs/heads/develop'
+        run: dotnet pack -c Release --no-restore $MAINAPP_ASP_PROJECT_PATH -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg --version-suffix "rev-$GITHUB_RUN_ID"
+      - name: Pack Release
+        if: github.ref == 'refs/heads/master'
+        run: dotnet pack -c Release --no-restore $MAINAPP_ASP_PROJECT_PATH -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg
+      - name: Publish
+        run:
+          dotnet nuget push $MAINAPP_ASP_PROJECT_PATH/bin/Release/*.nupkg -k $NUGET_TOKEN -s $NUGET_SERVER
+        env:
+          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+          NUGET_SERVER: "https://api.nuget.org/v3/index.json"
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/master'
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_VERSION: $(cat ${MAINAPP_ASP_PROJECT_PATH}/*.csproj | grep '<Version>' | head -n 1 | awk -F '>' '{print $2;}' | awk -F '<' '{print $1;}' | sed 's/\-\*//g')
+        with:
+          tag_name: ${{ env.TAG_VERSION }}
+          draft: false
+          prerelease: false

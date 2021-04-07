@@ -1,0 +1,107 @@
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using RabbitMQCoreClient.Configuration.DependencyInjection;
+using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.DependencyInjection.ConfigModels;
+using RabbitMQCoreClient.Exceptions;
+using System;
+using System.Linq;
+
+namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
+{
+    public static class JsonV1Binder
+    {
+        const string QueueSection = "Queue";
+        const string QueueName = "Queue:QueueName";
+        const string ExchangeName = "Exchange:Name";
+        const string SubscriptionSection = "Subscription";
+
+        public static IRabbitMQCoreClientBuilder RegisterV1Configuration(this IRabbitMQCoreClientBuilder builder,
+            IConfiguration? configuration)
+        {
+            if (configuration is null)
+                return builder;
+
+            // Точка обмена будет точкой по умолчанию.
+            var oldExchangeName = configuration[ExchangeName];
+            if (!string.IsNullOrEmpty(oldExchangeName))
+                builder.AddExchange(oldExchangeName, options: new ExchangeOptions { Name = oldExchangeName, IsDefault = true });
+
+            return builder;
+        }
+
+        public static IRabbitMQCoreClientConsumerBuilder RegisterV1Configuration(this IRabbitMQCoreClientConsumerBuilder builder,
+            IConfiguration? configuration)
+        {
+            if (configuration is null)
+                return builder;
+
+            // Точка обмена будет точкой по умолчанию.
+            var oldExchangeName = configuration[ExchangeName];
+
+            var queueName = configuration[QueueName];
+            if (string.IsNullOrEmpty(queueName))
+                return builder;
+
+            // Обнаружен старый формат очереди:
+            if (string.IsNullOrEmpty(oldExchangeName))
+                throw new ClientConfigurationException(@"При использовании конфигурации v1 требуется указать { ""Exchange"": { ""Name"": ""string"" } }");
+
+            var exchange = builder.Builder.Exchanges.FirstOrDefault(x => x.Name == oldExchangeName);
+            if (exchange is null)
+                throw new ClientConfigurationException($"The exchange {oldExchangeName} configured in queue {queueName} " +
+                    "not found in Exchanges section.");
+
+            // Регистрируем очередь и привязываем ее к точкам обмена.
+            RegisterQueue<QueueConfig, Queue>(builder,
+                configuration.GetSection(QueueSection),
+                exchange,
+                (qConfig) => Queue.Create(qConfig));
+
+            // Регистрируем подписку и привязываем ее к точкам обмена.
+            RegisterQueue<SubscriptionConfig, Subscription>(builder,
+                configuration.GetSection(SubscriptionSection),
+                exchange,
+                (qConfig) => Subscription.Create(qConfig));
+
+            return builder;
+        }
+
+        static void RegisterQueue<TConfig, TQueue>(IRabbitMQCoreClientConsumerBuilder builder,
+            IConfigurationSection? queueConfig,
+            Exchange exchange,
+            Func<TConfig, TQueue> createQueue)
+            where TConfig : new()
+            where TQueue : QueueBase
+        {
+            if (queueConfig is null)
+                return;
+
+            var q = BindConfig<TConfig>(queueConfig);
+
+            var queue = createQueue(q);
+            queue.Exchanges.Add(exchange.Name);
+
+            AddQueue(builder, queue);
+        }
+
+        static TConfig BindConfig<TConfig>(IConfigurationSection queueConfig)
+            where TConfig : new()
+        {
+            var q = new TConfig();
+            queueConfig.Bind(q);
+            return q;
+        }
+
+        static void AddQueue<T>(IRabbitMQCoreClientConsumerBuilder builder, T queue)
+            where T : QueueBase
+        {
+            // Так себе решение, но зато без дубляжа
+            switch (queue)
+            {
+                case Queue q: builder.AddQueue(q); break;
+                case Subscription q: builder.AddSubscription(q); break;
+            }
+        }
+    }
+}
