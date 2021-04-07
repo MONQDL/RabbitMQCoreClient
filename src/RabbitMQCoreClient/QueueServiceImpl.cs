@@ -19,7 +19,7 @@ using static RabbitMQCoreClient.Configuration.AppConstants.RabbitMQHeaders;
 namespace RabbitMQCoreClient
 {
     /// <summary>
-    /// Реализация интерфейса <see cref="IQueueService" />.
+    /// Implemenrations oof the <see cref="IQueueService" />.
     /// </summary>
     /// <seealso cref="RabbitMQCoreClient.IQueueService" />
     public sealed class QueueServiceImpl : IQueueService
@@ -32,7 +32,7 @@ namespace RabbitMQCoreClient
         IModel? _sendChannel;
 
         /// <summary>
-        /// Настройки сервиса MQ.
+        /// Client Options.
         /// </summary>
         public RabbitMQCoreClientOptions Options { get; }
 
@@ -43,7 +43,7 @@ namespace RabbitMQCoreClient
         public IConnection Connection => _connection!; // Пока что вот так. Свойство стопудово инициализируется в конструкторе.
 
         /// <summary>
-        /// Канал данных RabbitMQ.
+        /// Sending channel.
         /// </summary>
         public IModel SendChannel => _sendChannel!; // Пока что вот так. Свойство стопудово инициализируется в конструкторе.
 
