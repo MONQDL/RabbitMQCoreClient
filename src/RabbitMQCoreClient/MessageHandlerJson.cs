@@ -2,7 +2,6 @@
 using RabbitMQCoreClient.Configuration;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Models;
-using System;
 using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient

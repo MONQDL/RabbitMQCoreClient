@@ -18,9 +18,9 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 
         public static Queue Create(QueueConfig queueConfig)
         {
-            return new Queue(name: queueConfig.Name, 
-                       durable: queueConfig.Durable, 
-                       exclusive: queueConfig.Exclusive, 
+            return new Queue(name: queueConfig.Name,
+                       durable: queueConfig.Durable,
+                       exclusive: queueConfig.Exclusive,
                        autoDelete: queueConfig.AutoDelete)
             {
                 Arguments = queueConfig.Arguments ?? new Dictionary<string, object>(),

@@ -43,23 +43,23 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
                 return builder;
 
             // Регистрируем очереди и привязываем их к точкам обмена.
-            RegisterQueues<QueueConfig, Queue>(builder, 
-                configuration.GetSection(QueuesSection), 
+            RegisterQueues<QueueConfig, Queue>(builder,
+                configuration.GetSection(QueuesSection),
                 (qConfig) => Queue.Create(qConfig));
 
             // Регистрируем подписки и привязываем их к точкам обмена.
-            RegisterQueues<SubscriptionConfig, Subscription>(builder, 
-                configuration.GetSection(SubscriptionsSection), 
+            RegisterQueues<SubscriptionConfig, Subscription>(builder,
+                configuration.GetSection(SubscriptionsSection),
                 (qConfig) => Subscription.Create(qConfig));
 
             return builder;
         }
 
-        static void RegisterQueues<TConfig, TQueue>(IRabbitMQCoreClientConsumerBuilder builder, 
-            IConfigurationSection? queuesConfiguration, 
+        static void RegisterQueues<TConfig, TQueue>(IRabbitMQCoreClientConsumerBuilder builder,
+            IConfigurationSection? queuesConfiguration,
             Func<TConfig, TQueue> createQueue)
-            where TConfig: new()
-            where TQueue: QueueBase
+            where TConfig : new()
+            where TQueue : QueueBase
         {
             if (queuesConfiguration is null)
                 return;
@@ -108,7 +108,7 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
         }
 
         static void AddQueue<T>(IRabbitMQCoreClientConsumerBuilder builder, T queue)
-            where T: QueueBase
+            where T : QueueBase
         {
             // Так себе решение, но зато без дубляжа
             switch (queue)

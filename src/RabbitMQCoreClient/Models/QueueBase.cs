@@ -1,6 +1,7 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQCoreClient.Exceptions;
+using System;
 using System.Collections.Generic;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
@@ -85,7 +86,8 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 
             channel.BasicConsume(queue: declaredQueue.QueueName,
                 autoAck: false,
-                consumer: consumer
+                consumer: consumer,
+                consumerTag: $"amq.{declaredQueue.QueueName}.{Guid.NewGuid()}"
                 );
         }
 

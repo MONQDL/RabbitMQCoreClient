@@ -10,7 +10,7 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
     public sealed class Subscription : QueueBase
     {
         public Subscription()
-            :base(null, false, true, true)
+            : base(null, false, true, true)
         { }
 
         public static Subscription Create(SubscriptionConfig queueConfig)

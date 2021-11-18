@@ -22,7 +22,7 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigModels
         public string Name
         {
             get => string.IsNullOrEmpty(_name) ? QueueName : _name;
-            protected set => _name = value;
+            set => _name = value;
         }
 
         /// <summary>

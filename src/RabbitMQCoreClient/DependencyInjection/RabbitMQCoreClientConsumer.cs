@@ -112,7 +112,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             var rabbitArgs = new RabbitMessageEventArgs(@event.RoutingKey)
             {
-                CorrelationId = @event.BasicProperties.CorrelationId
+                CorrelationId = @event.BasicProperties.CorrelationId,
+                ConsumerTag = @event.ConsumerTag
             };
 
             var sourceMessageBody = @event.Body.ToArray();

@@ -231,9 +231,9 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
-        static void AddHandlerToBuilder(IRabbitMQCoreClientConsumerBuilder builder, 
-            Type handlerType, 
-            ConsumerHandlerOptions options, 
+        static void AddHandlerToBuilder(IRabbitMQCoreClientConsumerBuilder builder,
+            Type handlerType,
+            ConsumerHandlerOptions options,
             IList<string> routingKeys)
         {
             foreach (var routingKey in routingKeys)
