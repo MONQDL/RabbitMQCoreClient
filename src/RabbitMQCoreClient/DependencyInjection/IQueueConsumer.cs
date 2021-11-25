@@ -1,4 +1,5 @@
 ﻿using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 using System;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -24,5 +25,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Can be Null, if <see cref="Start"/> method was not called.
         /// </summary>
         IModel? ConsumeChannel { get; }
+
+        /// <summary>
+        /// The Async consumer, with default consume method configurated.
+        /// </summary>
+        AsyncEventingBasicConsumer? Consumer { get; }
     }
 }
