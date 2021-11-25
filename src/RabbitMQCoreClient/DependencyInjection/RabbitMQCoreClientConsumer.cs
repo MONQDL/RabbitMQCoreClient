@@ -21,11 +21,17 @@ namespace Microsoft.Extensions.DependencyInjection
         readonly ILogger _log;
 
         /// <summary>
-        /// Канал для получения данных RabbitMQ.
+        /// The RabbitMQ consume messages channel.
         /// </summary>
         public IModel? ConsumeChannel { get; private set; }
 
         AsyncEventingBasicConsumer? _consumer;
+
+        /// <summary>
+        /// The Async consumer, with default consume method configurated.
+        /// </summary>
+        public AsyncEventingBasicConsumer? Consumer => _consumer;
+
         bool _wasSubscribed = false;
 
         /// <summary>
