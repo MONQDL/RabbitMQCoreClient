@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using RabbitMQ.Client.Events;
+﻿using RabbitMQ.Client.Events;
 using System;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
@@ -65,11 +64,5 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
         /// Событие обработчика исключения внутренних вызовов библиотеки.
         /// </summary>
         public EventHandler<CallbackExceptionEventArgs>? ConnectionCallbackExceptionHandler { get; set; }
-
-        /// <summary>
-        /// Gets or sets the json serializer settings. That will be used to consumer and sender as Default.
-        /// Default is `new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }`.
-        /// </summary>
-        public JsonSerializerSettings? JsonSerializerSettings { get; set; } = AppConstants.DefaultSerializerSettings;
     }
 }

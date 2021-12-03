@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Models;
+using RabbitMQCoreClient.Serializers;
 using System;
 using System.Threading.Tasks;
 
@@ -15,7 +16,7 @@ namespace RabbitMQCoreClient.WebApp
             return Task.CompletedTask;
         }
 
-        protected override ValueTask OnParseError(string json, JsonException e, RabbitMessageEventArgs args) => base.OnParseError(json, e, args);
+        protected override ValueTask OnParseError(string json, Exception e, RabbitMessageEventArgs args) => base.OnParseError(json, e, args);
 
         void ProcessMessage(SimpleObj obj) =>
             //if (obj.Name != "my test name")
@@ -30,17 +31,8 @@ namespace RabbitMQCoreClient.WebApp
     public class RawHandler : IMessageHandler
     {
         public ErrorMessageRouting ErrorMessageRouter => new ErrorMessageRouting();
-        public ConsumerHandlerOptions Options
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-            set
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public ConsumerHandlerOptions Options { get; set; }
+        public IMessageSerializer Serializer { get; set; }
 
         public Task HandleMessage(string message, RabbitMessageEventArgs args)
         {

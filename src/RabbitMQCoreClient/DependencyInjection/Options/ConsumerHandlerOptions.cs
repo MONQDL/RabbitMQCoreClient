@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using RabbitMQCoreClient.Serializers;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 {
@@ -8,10 +9,9 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
     public class ConsumerHandlerOptions
     {
         /// <summary>
-        /// Gets or sets the json serializer settings. That will be used to consumer and sender as Default.
-        /// Default is `new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }`.
+        /// Gets or sets the json serializer that overides default serializer for the following massage handler.
         /// </summary>
-        public JsonSerializerSettings? JsonSerializerSettings { get; set; } = default;
+        public IMessageSerializer? CustomSerializer { get; set; } = default;
 
         /// <summary>
         /// The routing key that will mark the message on the exception handling stage.

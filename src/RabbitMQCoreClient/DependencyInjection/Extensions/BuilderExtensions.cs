@@ -32,6 +32,14 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// Use default serializer as NewtonsoftJson.
+        /// </summary>
+        public static IRabbitMQCoreClientBuilder AddDefaultSerializer(this IRabbitMQCoreClientBuilder builder)
+        {
+            return builder.AddNewtonsoftJson();
+        }
+
+        /// <summary>
         /// Add exchange connection to RabbitMQ.
         /// </summary>
         /// <param name="builder">The builder.</param>

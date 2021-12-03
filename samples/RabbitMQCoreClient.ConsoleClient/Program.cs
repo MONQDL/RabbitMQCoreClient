@@ -1,11 +1,12 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.Serializers;
 using System;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -32,19 +33,31 @@ namespace RabbitMQCoreClient.ConsoleClient
                 x.AddConsole();
             }));
             // Just for sending messages.
-            //services
-            //    .AddRabbitMQCoreClient(config);
+            services
+                .AddRabbitMQCoreClient(config.GetSection("RabbitMQ"))
+                .AddSystemTextJson(x => {
+                    x.PropertyNamingPolicy = null;
+                });
 
             // For sending and consuming messages config with subscriptions.
             services
-                .AddRabbitMQCoreClientConsumer(config.GetSection("RabbitMQ"),
-                    x => x.JsonSerializerSettings = new JsonSerializerSettings { ContractResolver = null }
-                )
+                .AddRabbitMQCoreClientConsumer(config.GetSection("RabbitMQ"))
                 .AddHandler<Handler>(new[] { "test_routing_key" }, new ConsumerHandlerOptions
                 {
-                    RetryKey = "test_routing_key_retry"
+                    RetryKey = "test_routing_key_retry",
+                    CustomSerializer = new SystemTextJsonMessageSerializer(x => {
+                        x.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                        x.PropertyNameCaseInsensitive = false;
+                    })
                 })
-                .AddHandler<Handler>(new[] { "test_routing_key_subscription" });
+                .AddHandler<Handler>(new[] { "test_routing_key_subscription" }, new ConsumerHandlerOptions
+                {
+                    RetryKey = "test_routing_key_retry",
+                    CustomSerializer = new SystemTextJsonMessageSerializer(x => {
+                        x.PropertyNamingPolicy = null;
+                        x.PropertyNameCaseInsensitive = false;
+                    })
+                });
 
             // For sending and consuming messages full configuration.
             //services
@@ -104,7 +117,7 @@ namespace RabbitMQCoreClient.ConsoleClient
                 {
                     await Task.Delay(3000, token);
                     var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
-                    await queueService.SendBatchAsync(bodyList, "test_routing_key_subscription", jsonSerializerSettings: new Newtonsoft.Json.JsonSerializerSettings()).AsTask();
+                    await queueService.SendBatchAsync(bodyList, "test_routing_key_subscription").AsTask();
                 }
                 catch (Exception e)
                 {

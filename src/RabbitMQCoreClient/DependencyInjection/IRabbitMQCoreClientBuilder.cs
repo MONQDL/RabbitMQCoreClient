@@ -1,4 +1,5 @@
 ﻿using RabbitMQCoreClient.Configuration.DependencyInjection;
+using RabbitMQCoreClient.Serializers;
 using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -6,12 +7,12 @@ namespace Microsoft.Extensions.DependencyInjection
     public interface IRabbitMQCoreClientBuilder
     {
         /// <summary>
-        /// Список сервисов, зарегистрированных в DI.
+        /// List of services registered in DI.
         /// </summary>
         IServiceCollection Services { get; }
 
         /// <summary>
-        /// Список сконфигурированных точек обмена.
+        /// List of configured exchange points.
         /// </summary>
         IList<Exchange> Exchanges { get; }
 
@@ -19,5 +20,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Gets the default exchange.
         /// </summary>
         Exchange? DefaultExchange { get; }
+        
+        /// <summary>
+        /// The default JSON serializer.
+        /// </summary>
+        IMessageSerializer Serializer { get; set; }
     }
 }

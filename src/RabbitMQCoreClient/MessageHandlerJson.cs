@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
-using RabbitMQCoreClient.Configuration;
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+﻿using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Models;
+using RabbitMQCoreClient.Serializers;
+using System;
 using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient
@@ -25,7 +25,7 @@ namespace RabbitMQCoreClient
         /// <param name="e">The e.</param>
         /// <param name="args">The <see cref="RabbitMessageEventArgs"/> instance containing the event data.</param>
         /// <returns></returns>
-        protected virtual ValueTask OnParseError(string json, JsonException e, RabbitMessageEventArgs args) => default;
+        protected virtual ValueTask OnParseError(string json, Exception e, RabbitMessageEventArgs args) => default;
 
         /// <summary>
         /// Обработать json сообщение.
@@ -45,6 +45,11 @@ namespace RabbitMQCoreClient
         /// </summary>
         public ConsumerHandlerOptions? Options { get; set; }
 
+        /// <summary>
+        /// The default json serializer.
+        /// </summary>
+        public IMessageSerializer Serializer { get; set; }
+
         /// <inheritdoc />
         public async Task HandleMessage(string message, RabbitMessageEventArgs args)
         {
@@ -52,9 +57,12 @@ namespace RabbitMQCoreClient
             TModel messageModel;
             try
             {
-                messageModel = JsonConvert.DeserializeObject<TModel>(message, Options?.JsonSerializerSettings ?? AppConstants.DefaultSerializerSettings);
+                var obj = Serializer.Deserialize<TModel>(message);
+                if (obj is null)
+                    throw new InvalidOperationException("The json parser returns null.");
+                messageModel = obj;
             }
-            catch (JsonException e)
+            catch (Exception e)
             {
                 await OnParseError(message, e, args);
                 // Падаем на верхнеуровневый обработчик.

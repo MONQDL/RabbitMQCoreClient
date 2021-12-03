@@ -38,7 +38,7 @@ namespace RabbitMQCoreClient
         event Action OnConnectionShutdown;
 
         /// <summary>
-        /// Отправить сообщение в очередь (потокобезопасный метод). <paramref name="obj" /> при это будет сериализован в Json.
+        /// Send the message to the queue (thread safe method). <paramref name="obj" /> will be serialized to Json.
         /// </summary>
         /// <typeparam name="T">Тип класса сообщения.</typeparam>
         /// <param name="obj">Экземпляр класса <typeparamref name="T" />, который будет сериализирован в JSON и отправлен в очередь.</param>
@@ -46,7 +46,6 @@ namespace RabbitMQCoreClient
         /// <param name="exchange">Название точки обмена, в которую требуется послать сообщение.</param>
         /// <param name="decreaseTtl">if set to <c>true</c> [decrease TTL].</param>
         /// <param name="correlationId">Корреляционный Id, который используется для логирования сообщений.</param>
-        /// <param name="jsonSerializerSettings">The json serializer settings.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">jsonString - jsonString
         /// or
@@ -55,10 +54,10 @@ namespace RabbitMQCoreClient
         ValueTask SendAsync<T>(
             T obj,
             string routingKey,
-            string exchange = default,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default,
-            JsonSerializerSettings jsonSerializerSettings = default);
+            string? correlationId = default
+            );
 
         /// <summary>
         /// Отправить сообщение в очередь (потокобезопасный метод).
@@ -75,9 +74,9 @@ namespace RabbitMQCoreClient
         ValueTask SendJsonAsync(
             string json,
             string routingKey,
-            string exchange = default,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default);
+            string? correlationId = default);
 
         /// <summary>
         /// Отправить сырое сообщение в очередь с указанными свойствами <paramref name="props" /> (потокобезопасный метод).
@@ -96,12 +95,12 @@ namespace RabbitMQCoreClient
             byte[] obj,
             IBasicProperties props,
             string routingKey,
-            string exchange,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default);
+            string? correlationId = default);
 
         /// <summary>
-        /// Отправить пакетно сообщения в очередь (потокобезопасный метод). <paramref name="objs" /> при этом будут сериализованы в Json.
+        /// Send messages pack to the queue (thred safe method). <paramref name="objs" /> will be serialized to Json.
         /// </summary>
         /// <typeparam name="T">Тип класса сообщения.</typeparam>
         /// <param name="objs">Список объектов, которые являются экземплярами класса <typeparamref name="T" />,
@@ -110,7 +109,6 @@ namespace RabbitMQCoreClient
         /// <param name="exchange">Название точки обмена, в которую требуется послать сообщение.</param>
         /// <param name="decreaseTtl">if set to <c>true</c> [decrease TTL].</param>
         /// <param name="correlationId">Корреляционный Id, который используется для логирования сообщений.</param>
-        /// <param name="jsonSerializerSettings">The json serializer settings.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">jsonString - jsonString
         /// or
@@ -119,10 +117,9 @@ namespace RabbitMQCoreClient
         ValueTask SendBatchAsync<T>(
             IEnumerable<T> objs,
             string routingKey,
-            string exchange = default,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default,
-            JsonSerializerSettings jsonSerializerSettings = default);
+            string? correlationId = default);
 
         /// <summary>
         /// Отправить пакетно сообщения в очередь (потокобезопасный метод).
@@ -139,9 +136,9 @@ namespace RabbitMQCoreClient
         ValueTask SendJsonBatchAsync(
             IEnumerable<string> serializedJsonList,
             string routingKey,
-            string exchange = default,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default);
+            string? correlationId = default);
 
         /// <summary>
         /// Отправить пакетно сырые сообщение в очередь с указанными свойствами (потокобезопасный метод).
@@ -158,8 +155,8 @@ namespace RabbitMQCoreClient
         ValueTask SendBatchAsync(
             IEnumerable<(byte[] Body, IBasicProperties Props)> objs,
             string routingKey,
-            string exchange,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default);
+            string? correlationId = default);
     }
 }

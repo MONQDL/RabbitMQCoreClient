@@ -1,5 +1,6 @@
 ﻿using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Models;
+using RabbitMQCoreClient.Serializers;
 using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient
@@ -25,5 +26,10 @@ namespace RabbitMQCoreClient
         /// Consumer handler options, that was used during configuration.
         /// </summary>
         ConsumerHandlerOptions? Options { get; set; }
+
+        /// <summary>
+        /// The default json serializer.
+        /// </summary>
+        IMessageSerializer Serializer { get; set; }
     }
 }

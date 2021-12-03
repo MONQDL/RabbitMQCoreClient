@@ -1,12 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using RabbitMQCoreClient.Configuration;
 using RabbitMQCoreClient.Configuration.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Exceptions;
+using RabbitMQCoreClient.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -27,6 +26,7 @@ namespace RabbitMQCoreClient
         readonly ILogger<QueueServiceImpl> _log;
         static readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
         readonly IList<Exchange> _exchanges;
+        readonly IMessageSerializer _serializer;
         bool _connectionBlocked = false;
         IConnection? _connection;
         IModel? _sendChannel;
@@ -73,6 +73,7 @@ namespace RabbitMQCoreClient
             Options = options ?? throw new ArgumentNullException(nameof(options), $"{nameof(options)} is null.");
             _log = loggerFactory.CreateLogger<QueueServiceImpl>();
             _exchanges = builder.Exchanges;
+            _serializer = builder.Serializer;
 
             Reconnect(); // Start connection cycle.
         }
@@ -204,15 +205,14 @@ namespace RabbitMQCoreClient
             string routingKey,
             string? exchange = default,
             bool decreaseTtl = true,
-            string? correlationId = default,
-            JsonSerializerSettings? jsonSerializerSettings = default)
+            string? correlationId = default
+            )
         {
             // Проверка на Null без боксинга. // https://stackoverflow.com/a/864860
             if (EqualityComparer<T>.Default.Equals(obj, default))
                 throw new ArgumentNullException(nameof(obj));
 
-            var serializeSettings = jsonSerializerSettings ?? Options.JsonSerializerSettings ?? AppConstants.DefaultSerializerSettings;
-            var serializedObj = JsonConvert.SerializeObject(obj, serializeSettings);
+            var serializedObj = _serializer.Serialize(obj);
             return SendJsonAsync(
                         serializedObj,
                         exchange: exchange,
@@ -287,14 +287,12 @@ namespace RabbitMQCoreClient
             string routingKey,
             string? exchange = default,
             bool decreaseTtl = true,
-            string? correlationId = default,
-            JsonSerializerSettings? jsonSerializerSettings = default)
+            string? correlationId = default)
         {
             var messages = new List<string>();
-            var serializeSettings = jsonSerializerSettings ?? Options.JsonSerializerSettings ?? AppConstants.DefaultSerializerSettings;
             foreach (var obj in objs)
             {
-                messages.Add(JsonConvert.SerializeObject(obj, serializeSettings));
+                messages.Add(_serializer.Serialize(obj));
             }
 
             return SendJsonBatchAsync(
@@ -340,7 +338,7 @@ namespace RabbitMQCoreClient
         public async ValueTask SendBatchAsync(
             IEnumerable<(byte[] Body, IBasicProperties Props)> objs,
             string routingKey,
-            string? exchange,
+            string? exchange = default,
             bool decreaseTtl = true,
             string? correlationId = default)
         {

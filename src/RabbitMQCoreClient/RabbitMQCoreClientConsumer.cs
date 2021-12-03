@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using RabbitMQCoreClient;
 using RabbitMQCoreClient.Configuration;
 using RabbitMQCoreClient.Exceptions;
 using RabbitMQCoreClient.Models;
@@ -11,7 +11,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace RabbitMQCoreClient
 {
     public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
     {
@@ -144,7 +144,6 @@ namespace Microsoft.Extensions.DependencyInjection
             var handlerType = _builder.RoutingHandlerTypes[@event.RoutingKey].Type;
             var handlerOptions = _builder.RoutingHandlerTypes[@event.RoutingKey].Options;
 
-
             // Получаем сервис-обработчик сообщений.
             using var scope = _scopeFactory.CreateScope();
             var handler = (IMessageHandler)scope.ServiceProvider.GetRequiredService(handlerType);
@@ -154,9 +153,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 return;
             }
 
-            handler.Options = handlerOptions ?? new RabbitMQCoreClient.Configuration.DependencyInjection.Options.ConsumerHandlerOptions();
-            // TODO: Hack. Сделать как-то по другому!
-            handler.Options.JsonSerializerSettings ??= _queueService.Options.JsonSerializerSettings ?? AppConstants.DefaultSerializerSettings;
+            handler.Options = handlerOptions ?? new();
+            // If user overides the default serializer then the custom serializer will be used for the handler.
+            handler.Serializer = handler.Options.CustomSerializer ?? _builder.Builder.Serializer;
 
             _log.LogDebug($"Created scope for handler type {handler.GetType().Name}. Start processing message.");
             try
