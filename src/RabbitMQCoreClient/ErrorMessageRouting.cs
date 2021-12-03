@@ -3,32 +3,32 @@
 namespace RabbitMQCoreClient
 {
     /// <summary>
-    /// Методы маршрутизации входящего сообщения.
+    /// Incoming message routing methods.
     /// </summary>
     public sealed class ErrorMessageRouting
     {
         /// <summary>
-        /// Выбранный маршрут обработки.
-        /// По умолчанию: Routes.SourceQueue.
+        /// Selected processing route.
+        /// Default: Routes.SourceQueue.
         /// </summary>
         public Routes Route { get; private set; } = Routes.SourceQueue;
 
         /// <summary>
-        /// Действия по изменению Ttl.
-        /// По умолчанию: TtlActions.Decrease.
+        /// Actions to change Ttl.
+        /// Default: TtlActions.Decrease.
         /// </summary>
         public TtlActions TtlAction { get; set; } = TtlActions.Decrease;
 
         /// <summary>
-        /// Выбрать машрут отправки сообщения.
+        /// Select the route for sending the message.
         /// </summary>
         /// <param name="route">Маршрут.</param>
         public void MoveTo(Routes route) => Route = route;
 
         /// <summary>
-        /// Отправить сообщение обратно в очередь.
+        /// Send the message back to the queue.
         /// </summary>
-        /// <param name="decreaseTtl">Если <c>true</c> то будет уменьшено ttl сообщения.</param>
+        /// <param name="decreaseTtl">If <c>true</c> then ttl messages will be minified.</param>
         public void MoveBackToQueue(bool decreaseTtl = true)
         {
             Route = Routes.SourceQueue;
@@ -36,7 +36,7 @@ namespace RabbitMQCoreClient
         }
 
         /// <summary>
-        /// Отправить сообщение в dead letter exchange.
+        /// Send a message to dead letter exchange.
         /// </summary>
         public void MoveToDeadLetter() => Route = Routes.DeadLetter;
     }

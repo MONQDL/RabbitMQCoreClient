@@ -6,17 +6,17 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
     public class RabbitMQCoreClientOptions
     {
         /// <summary>
-        /// Адрес сервера RabbitMQ.
+        /// RabbitMQ server address.
         /// </summary>
         public string HostName { get; set; } = "127.0.0.1";
 
         /// <summary>
-        /// Пароль пользователя, у которого есть права на подключение к серверу <see cref="HostName"/>.
+        /// Password of the user who has rights to connect to the server <see cref="HostName"/>.
         /// </summary>
         public string Password { get; set; } = "guest";
 
         /// <summary>
-        /// Порт доступа к сервису.
+        /// Service access port.
         /// </summary>
         public int Port { get; set; } = 5672;
 
@@ -41,7 +41,7 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
         public int ReconnectionAttemptsCount { get; set; } = 20;
 
         /// <summary>
-        /// Пользователь, у которого есть права на подключение к серверу <see cref="HostName"/>.
+        /// User who has rights to connect to the server <see cref="HostName"/>.
         /// </summary>
         public string UserName { get; set; } = "guest";
 
@@ -51,17 +51,17 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
         public string VirtualHost { get; set; } = "/";
 
         /// <summary>
-        /// Количество попыток обработки сообщения, при обработке которого было вызвано исключение.
+        /// The number of times the message was attempted to be processed during which an exception was thrown.
         /// </summary>
         public int DefaultTtl { get; set; } = 5;
 
         /// <summary>
-        /// К-во сообщений, которые будут предварительно загружены в обработчик.
+        /// Number of messages to be pre-loaded into the handler.
         /// </summary>
         public ushort PrefetchCount { get; set; } = 1;
 
         /// <summary>
-        /// Событие обработчика исключения внутренних вызовов библиотеки.
+        /// Internal library call exception handler event.
         /// </summary>
         public EventHandler<CallbackExceptionEventArgs>? ConnectionCallbackExceptionHandler { get; set; }
     }

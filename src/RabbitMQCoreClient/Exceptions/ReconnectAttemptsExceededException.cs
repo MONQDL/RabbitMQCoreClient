@@ -1,28 +1,10 @@
 ﻿using System;
-using System.Runtime.Serialization;
 
 namespace RabbitMQCoreClient.Exceptions
 {
     [Serializable]
     public class ReconnectAttemptsExceededException : Exception
     {
-        /// <summary>Initializes a new instance of the <see cref="NotConnectedException" /> class.</summary>
-        public ReconnectAttemptsExceededException()
-        {
-
-        }
-
-        /// <summary>Initializes a new instance of the <see cref="NotConnectedException" /> class with serialized data.</summary>
-        /// <param name="info">The <see cref="System.Runtime.Serialization.SerializationInfo" /> that holds the serialized object data about the exception being thrown.</param>
-        /// <param name="context">The <see cref="System.Runtime.Serialization.StreamingContext" /> that contains contextual information about the source or destination.</param>
-        /// <exception cref="System.ArgumentNullException">
-        /// <paramref name="info" /> is <see langword="null" />.</exception>
-        /// <exception cref="System.Runtime.Serialization.SerializationException">The class name is <see langword="null" /> or <see cref="System.Exception.HResult" /> is zero (0).</exception>
-        protected ReconnectAttemptsExceededException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-
-        }
-
         /// <summary>Initializes a new instance of the <see cref="NotConnectedException" /> class with a specified error message.</summary>
         /// <param name="message">The message that describes the error.</param>
         public ReconnectAttemptsExceededException(string message) : base(message)

@@ -100,7 +100,7 @@ namespace RabbitMQCoreClient
 
             _consumer.Received += Consumer_Received;
 
-            // Конфигурация DeadLetterExchange
+            // DeadLetterExchange configuration.
             if (_builder.Queues.Any(x => !string.IsNullOrEmpty(x.DeadLetterExchange)))
                 ConfigureDeadLetterExchange();
 
@@ -127,7 +127,7 @@ namespace RabbitMQCoreClient
             string message = Encoding.UTF8.GetString(sourceMessageBody) ?? string.Empty;
             _log.LogDebug("New message received with deliveryTag={deliveryTag}. message: {message}", @event.DeliveryTag, message);
 
-            // Отправляем сообщение в очередь смерти, если закончился ttl.
+            // Send a message to the death queue if ttl is over.
             if (@event.BasicProperties.Headers?.ContainsKey(AppConstants.RabbitMQHeaders.TtlHeader) == true
                 && (int)@event.BasicProperties.Headers[AppConstants.RabbitMQHeaders.TtlHeader] <= 0)
             {
@@ -144,7 +144,7 @@ namespace RabbitMQCoreClient
             var handlerType = _builder.RoutingHandlerTypes[@event.RoutingKey].Type;
             var handlerOptions = _builder.RoutingHandlerTypes[@event.RoutingKey].Options;
 
-            // Получаем сервис-обработчик сообщений.
+            // Get the message handler service.
             using var scope = _scopeFactory.CreateScope();
             var handler = (IMessageHandler)scope.ServiceProvider.GetRequiredService(handlerType);
             if (handler is null)
@@ -167,7 +167,7 @@ namespace RabbitMQCoreClient
             }
             catch (Exception e)
             {
-                // Обрабатываем сообщение в зависимости от заданного маршрута.
+                // Process the message depending on the given route.
                 switch (handler.ErrorMessageRouter.Route)
                 {
                     case Routes.DeadLetter:
@@ -179,10 +179,10 @@ namespace RabbitMQCoreClient
                         var decreaseTtl = handler.ErrorMessageRouter.TtlAction == TtlActions.Decrease;
                         ConsumeChannel.BasicAck(@event.DeliveryTag, false);
 
-                        // Пересылаем сообщение обратно в очередь, при этом TTL сообщения уменьшается на 1,
-                        // в зависимости от настроек handler.ErrorMessageRouter.TtlAction.
-                        // Сообщение отправляется обратно в очередь по ключу handlerOptions?.RetryKey, если он задан,
-                        // иначе отправляется в очередь с исходным ключом.
+                        // Forward the message back to the queue, while the TTL of the message is reduced by 1,
+                        // depending on the settings of handler.ErrorMessageRouter.TtlAction.
+                        // The message is sent back to the queue using the `handlerOptions?.RetryKey` key,
+                        // if specified, otherwise it is sent to the queue with the original key.
                         await _queueService.SendAsync(
                             sourceMessageBody,
                             @event.BasicProperties,
@@ -212,16 +212,16 @@ namespace RabbitMQCoreClient
             if (ConsumeChannel is null)
                 throw new NotConnectedException("ConsumeChannel is null");
 
-            // Объявляем DeadLetterExchange.
+            // Declaring DeadLetterExchange.
             var deadLetterExchanges = _builder.Queues
                 .Where(x => !string.IsNullOrWhiteSpace(x.DeadLetterExchange))
                 .Select(x => x.DeadLetterExchange)
                 .Distinct();
 
-            // TODO: Переделать конфигурацию очереди мертвых сообщений в будущем. Пока что хардкод.
+            // TODO: Redo the configuration of the dead message queue in the future. So far, hardcode.
             const string deadLetterQueueName = "dead_letter";
 
-            // Регистрируем очередь, куда будут скапливаться "отвергнутые" сообщения.
+            // We register the queue where the "rejected" messages will be stored.
             ConsumeChannel.QueueDeclare(queue: "dead_letter",
                     durable: true,
                     exclusive: false,

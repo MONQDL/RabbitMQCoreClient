@@ -1,26 +1,9 @@
 ﻿using System;
-using System.Runtime.Serialization;
 
 namespace RabbitMQCoreClient.Exceptions
 {
     public class QueueBindException : Exception
     {
-        /// <summary>Initializes a new instance of the <see cref="QueueBindException"></see> class.</summary>
-        public QueueBindException()
-        {
-
-        }
-
-        /// <summary>Initializes a new instance of the <see cref="QueueBindException"></see> class with serialized data.</summary>
-        /// <param name="info">The <see cref="System.Runtime.Serialization.SerializationInfo"></see> that holds the serialized object data about the exception being thrown.</param>
-        /// <param name="context">The <see cref="System.Runtime.Serialization.StreamingContext"></see> that contains contextual information about the source or destination.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="info">info</paramref> parameter is null.</exception>
-        /// <exception cref="System.Runtime.Serialization.SerializationException">The class name is null or <see cref="System.Exception.HResult"></see> is zero (0).</exception>
-        protected QueueBindException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-
-        }
-
         /// <summary>Initializes a new instance of the <see cref="QueueBindException"></see> class with a specified error message.</summary>
         /// <param name="message">The message that describes the error.</param>
         public QueueBindException(string message) : base(message)

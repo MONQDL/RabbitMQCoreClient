@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 {
     /// <summary>
-    /// Простая настраиваемая очередь сообщений.
+    /// Simple custom message queue.
     /// </summary>
     public sealed class Queue : QueueBase
     {

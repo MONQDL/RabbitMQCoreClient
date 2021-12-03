@@ -2,7 +2,7 @@
 
 namespace RabbitMQCoreClient.Serializers
 {
-    public class SystemTextJsonMessageSerializer: IMessageSerializer
+    public class SystemTextJsonMessageSerializer : IMessageSerializer
     {
         public System.Text.Json.JsonSerializerOptions Options { get; }
 

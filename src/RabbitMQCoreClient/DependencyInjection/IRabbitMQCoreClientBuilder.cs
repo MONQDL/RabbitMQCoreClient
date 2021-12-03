@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Gets the default exchange.
         /// </summary>
         Exchange? DefaultExchange { get; }
-        
+
         /// <summary>
         /// The default JSON serializer.
         /// </summary>

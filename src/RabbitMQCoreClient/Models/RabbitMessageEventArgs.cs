@@ -10,7 +10,7 @@ namespace RabbitMQCoreClient.Models
         public string RoutingKey { get; private set; }
 
         /// <summary>
-        /// Корреляционный Id, которые пробрасывается вместе с сообщением и может быть использован при выявлении цепочек логов.
+        /// Correlation Id, which is forwarded along with the message and can be used to identify log chains.
         /// </summary>
         public string? CorrelationId { get; set; }
 

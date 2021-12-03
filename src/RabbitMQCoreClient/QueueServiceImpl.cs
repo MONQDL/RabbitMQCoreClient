@@ -38,14 +38,14 @@ namespace RabbitMQCoreClient
 
 
         /// <summary>
-        /// Интерфейс соединения RabbitMQ.
+        /// RabbitMQ connection interface.
         /// </summary>
-        public IConnection Connection => _connection!; // Пока что вот так. Свойство стопудово инициализируется в конструкторе.
+        public IConnection Connection => _connection!; // So far, that's it. The property is completely initialized in the constructor.
 
         /// <summary>
         /// Sending channel.
         /// </summary>
-        public IModel SendChannel => _sendChannel!; // Пока что вот так. Свойство стопудово инициализируется в конструкторе.
+        public IModel SendChannel => _sendChannel!; // So far, that's it. The property is completely initialized in the constructor.
 
         /// <summary>
         /// Occurs when connection restored after reconnect.
@@ -62,7 +62,7 @@ namespace RabbitMQCoreClient
         int _reconnectAttemptsCount = 0;
 
         /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="QueueServiceImpl" />.
+        /// Initializes a new instance of the class <see cref="QueueServiceImpl" />.
         /// </summary>
         /// <param name="options">The options.</param>
         /// <param name="loggerFactory">The logger factory.</param>
@@ -83,7 +83,7 @@ namespace RabbitMQCoreClient
         /// </summary>
         public void Connect()
         {
-            // Защита от повторного вызова метода Connect();
+            // Protection against repeated calls to the `Connect()` method.
             if (_connection?.IsOpen == true)
             {
                 _log.LogWarning("Connection already open.");

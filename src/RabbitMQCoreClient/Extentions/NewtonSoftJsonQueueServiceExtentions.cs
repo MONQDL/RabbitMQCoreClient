@@ -16,13 +16,13 @@ namespace RabbitMQCoreClient
         /// <summary>
         /// Send the message to the queue (thread safe method). <paramref name="obj" /> will be serialized to Json.
         /// </summary>
-        /// <typeparam name="T">Тип класса сообщения.</typeparam>
+        /// <typeparam name="T">The class type of the message.</typeparam>
         /// <param name="queueService">The <see cref="IQueueService"/> service object.</param>
-        /// <param name="obj">Экземпляр класса <typeparamref name="T" />, который будет сериализирован в JSON и отправлен в очередь.</param>
-        /// <param name="routingKey">Ключ маршрутизации, с которыми будет отправлено сообщение.</param>
-        /// <param name="exchange">Название точки обмена, в которую требуется послать сообщение.</param>
-        /// <param name="decreaseTtl">if set to <c>true</c> [decrease TTL].</param>
-        /// <param name="correlationId">Корреляционный Id, который используется для логирования сообщений.</param>
+        /// <param name="obj">An instance of the <typeparamref name="T" /> class that will be serialized to JSON and sent to the queue.</param>
+        /// <param name="routingKey">The routing key with which the message will be sent.</param>
+        /// <param name="exchange">The name of the exchange point to which the message is to be sent.</param>
+        /// <param name="decreaseTtl">If set to <c>true</c> [decrease TTL].</param>
+        /// <param name="correlationId">Correlation Id, which is used to log messages.</param>
         /// <param name="jsonSerializerSettings">The json serializer settings.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">jsonString - jsonString
@@ -39,7 +39,7 @@ namespace RabbitMQCoreClient
             string? correlationId = default
             )
         {
-            // Проверка на Null без боксинга. // https://stackoverflow.com/a/864860
+            // Checking for Null without boxing. // https://stackoverflow.com/a/864860
             if (EqualityComparer<T>.Default.Equals(obj, default))
                 throw new ArgumentNullException(nameof(obj));
 
@@ -56,14 +56,14 @@ namespace RabbitMQCoreClient
         /// <summary>
         /// Send messages pack to the queue (thred safe method). <paramref name="objs" /> will be serialized to Json.
         /// </summary>
-        /// <typeparam name="T">Тип класса сообщения.</typeparam>
+        /// <typeparam name="T">The class type of the message.</typeparam>
         /// <param name="queueService">The <see cref="IQueueService"/> service object.</param>
-        /// <param name="objs">Список объектов, которые являются экземплярами класса <typeparamref name="T" />,
-        /// которые будут сериализированы в JSON и отправлены в очередь.</param>
-        /// <param name="routingKey">Ключ маршрутизации, с которыми будет отправлено сообщение.</param>
-        /// <param name="exchange">Название точки обмена, в которую требуется послать сообщение.</param>
+        /// <param name="objs">A list of objects that are instances of the class <typeparamref name="T" /> 
+        /// that will be serialized to JSON and sent to the queue.</param>
+        /// <param name="routingKey">The routing key with which the message will be sent.</param>
+        /// <param name="exchange">The name of the exchange point to which the message is to be sent.</param>
         /// <param name="decreaseTtl">if set to <c>true</c> [decrease TTL].</param>
-        /// <param name="correlationId">Корреляционный Id, который используется для логирования сообщений.</param>
+        /// <param name="correlationId">Correlation Id, which is used to log messages.</param>
         /// <param name="jsonSerializerSettings">The json serializer settings.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">jsonString - jsonString

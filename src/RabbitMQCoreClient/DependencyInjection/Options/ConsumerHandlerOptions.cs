@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using RabbitMQCoreClient.Serializers;
+﻿using RabbitMQCoreClient.Serializers;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 {

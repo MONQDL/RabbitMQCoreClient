@@ -19,7 +19,7 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
             if (configuration is null)
                 return builder;
 
-            // Регистрируем точки обмена.
+            // Register exchange points.
             RegisterExchanges(builder, configuration);
 
             return builder;
@@ -42,12 +42,12 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
             if (configuration is null)
                 return builder;
 
-            // Регистрируем очереди и привязываем их к точкам обмена.
+            // Register queues and link them to exchange points.
             RegisterQueues<QueueConfig, Queue>(builder,
                 configuration.GetSection(QueuesSection),
                 (qConfig) => Queue.Create(qConfig));
 
-            // Регистрируем подписки и привязываем их к точкам обмена.
+            // Register subscriptions and link them to exchange points.
             RegisterQueues<SubscriptionConfig, Subscription>(builder,
                 configuration.GetSection(SubscriptionsSection),
                 (qConfig) => Subscription.Create(qConfig));
@@ -110,7 +110,7 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
         static void AddQueue<T>(IRabbitMQCoreClientConsumerBuilder builder, T queue)
             where T : QueueBase
         {
-            // Так себе решение, но зато без дубляжа
+            // So-so solution, but without dubbing.
             switch (queue)
             {
                 case Queue q: builder.AddQueue(q); break;

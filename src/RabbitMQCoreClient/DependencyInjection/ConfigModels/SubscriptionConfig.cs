@@ -3,28 +3,29 @@
 namespace RabbitMQCoreClient.DependencyInjection.ConfigModels
 {
     /// <summary>
-    /// Очередь сообщения для подписки на события.
-    /// Очередь имеет автоматическое наименование. При отсоединении клиента от сервера очередь автоматически удаляется.
+    /// Message queue for subscribing to events. 
+    /// The queue is automatically named. 
+    /// When the client disconnects from the server, the queue is automatically deleted.
     /// </summary>
     public class SubscriptionConfig
     {
         /// <summary>
-        /// Название точки обмена, в которую будут попадать сообщения, для которых был получен reject или nack.
+        /// The name of the exchange point that will receive messages for which a reject or nack was received.
         /// </summary>
         public string? DeadLetterExchange { get; set; }
 
         /// <summary>
-        /// Список дополнительных параметров, которые будут использоваться при инициализации очереди.
+        /// List of additional parameters that will be used when initializing the queue.
         /// </summary>
         public IDictionary<string, object> Arguments { get; set; } = new Dictionary<string, object>();
 
         /// <summary>
-        /// Список ключей маршрутизации для очереди.
+        /// List of routing keys for the queue.
         /// </summary>
         public HashSet<string> RoutingKeys { get; set; } = new HashSet<string>();
 
         /// <summary>
-        /// Список точек обмена, к которым привязывается очередь.
+        /// The list of exchange points to which the queue is bound.
         /// </summary>
         public HashSet<string> Exchanges { get; set; } = new HashSet<string>();
     }

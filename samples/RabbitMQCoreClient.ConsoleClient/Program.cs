@@ -35,7 +35,8 @@ namespace RabbitMQCoreClient.ConsoleClient
             // Just for sending messages.
             services
                 .AddRabbitMQCoreClient(config.GetSection("RabbitMQ"))
-                .AddSystemTextJson(x => {
+                .AddSystemTextJson(x =>
+                {
                     x.PropertyNamingPolicy = null;
                 });
 
@@ -45,7 +46,8 @@ namespace RabbitMQCoreClient.ConsoleClient
                 .AddHandler<Handler>(new[] { "test_routing_key" }, new ConsumerHandlerOptions
                 {
                     RetryKey = "test_routing_key_retry",
-                    CustomSerializer = new SystemTextJsonMessageSerializer(x => {
+                    CustomSerializer = new SystemTextJsonMessageSerializer(x =>
+                    {
                         x.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                         x.PropertyNameCaseInsensitive = false;
                     })
@@ -53,7 +55,8 @@ namespace RabbitMQCoreClient.ConsoleClient
                 .AddHandler<Handler>(new[] { "test_routing_key_subscription" }, new ConsumerHandlerOptions
                 {
                     RetryKey = "test_routing_key_retry",
-                    CustomSerializer = new SystemTextJsonMessageSerializer(x => {
+                    CustomSerializer = new SystemTextJsonMessageSerializer(x =>
+                    {
                         x.PropertyNamingPolicy = null;
                         x.PropertyNameCaseInsensitive = false;
                     })

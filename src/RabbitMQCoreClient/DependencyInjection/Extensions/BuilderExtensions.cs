@@ -247,8 +247,8 @@ namespace Microsoft.Extensions.DependencyInjection
             foreach (var routingKey in routingKeys)
             {
                 if (builder.RoutingHandlerTypes.ContainsKey(routingKey))
-                    throw new ClientConfigurationException("Ключ маршрутизации уже обрабатывается " +
-                        $"обработчиком типа {builder.RoutingHandlerTypes[routingKey].Type.FullName}.");
+                    throw new ClientConfigurationException("The routing key is already being processed by a handler like " +
+                        $"{builder.RoutingHandlerTypes[routingKey].Type.FullName}.");
 
                 builder.RoutingHandlerTypes.Add(routingKey, (handlerType, options));
             }
