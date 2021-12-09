@@ -36,27 +36,25 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
             if (configuration is null)
                 return builder;
 
+            // Try to detect old configuration format.
             // The exchange point will be the default point.
             var oldExchangeName = configuration[ExchangeName];
-
-            var queueName = configuration[QueueName];
-            if (string.IsNullOrEmpty(queueName))
+            if (string.IsNullOrEmpty(oldExchangeName))
                 return builder;
 
             // Old queue format detected.
-            if (string.IsNullOrEmpty(oldExchangeName))
-                throw new ClientConfigurationException(@"When using v1 configuration, you need to specify { ""Exchange"": { ""Name"": ""string"" } }");
-
             var exchange = builder.Builder.Exchanges.FirstOrDefault(x => x.Name == oldExchangeName);
             if (exchange is null)
-                throw new ClientConfigurationException($"The exchange {oldExchangeName} configured in queue {queueName} " +
-                    "not found in Exchanges section.");
+                throw new ClientConfigurationException($"The exchange {oldExchangeName} is " +
+                    "not found in \"Exchange\" section.");
 
             // Register a queue and bind it to exchange points.
-            RegisterQueue<QueueConfig, Queue>(builder,
-                configuration.GetSection(QueueSection),
-                exchange,
-                (qConfig) => Queue.Create(qConfig));
+            var queueName = configuration[QueueName];
+            if (!string.IsNullOrEmpty(queueName))
+                RegisterQueue<QueueConfig, Queue>(builder,
+                    configuration.GetSection(QueueSection),
+                    exchange,
+                    (qConfig) => Queue.Create(qConfig));
 
             // Register a subscription and link it to exchange points.
             RegisterQueue<SubscriptionConfig, Subscription>(builder,
