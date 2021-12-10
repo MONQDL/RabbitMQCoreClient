@@ -236,7 +236,7 @@ namespace RabbitMQCoreClient
             var body = Encoding.UTF8.GetBytes(json);
             var properties = CreateBasicJsonProperties();
 
-            _log.LogDebug("Sending json message {message} with routing key {routingKey}.", json, exchange, routingKey);
+            _log.LogDebug("Sending json message {message} to exchange {exchange} with routing key {routingKey}.", json, exchange, routingKey);
 
             return SendAsync(body,
                 props: properties,
@@ -323,7 +323,7 @@ namespace RabbitMQCoreClient
                 messages.Add((body, props));
             }
 
-            _log.LogDebug("Sending json messages batch with routing key {routingKey}.", exchange, routingKey);
+            _log.LogDebug("Sending json messages batch to exchange {exchange} with routing key {routingKey}.", exchange, routingKey);
 
             return SendBatchAsync(
                 objs: messages,

@@ -48,7 +48,7 @@ namespace RabbitMQCoreClient
         /// <summary>
         /// The default json serializer.
         /// </summary>
-        public IMessageSerializer Serializer { get; set; }
+        public IMessageSerializer Serializer { get; set; } = new NewtonsoftJsonMessageSerializer();
 
         /// <inheritdoc />
         public async Task HandleMessage(string message, RabbitMessageEventArgs args)
