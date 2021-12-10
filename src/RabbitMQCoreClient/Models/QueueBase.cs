@@ -79,10 +79,11 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
             if (declaredQueue is null)
                 throw new QueueBindException("Queue is not properly binded.");
 
-            foreach (var exchangeName in Exchanges)
-            {
-                BindToExchange(channel, declaredQueue, exchangeName);
-            }
+            if (RoutingKeys.Count > 0)
+                foreach (var exchangeName in Exchanges)
+                {
+                    BindToExchange(channel, declaredQueue, exchangeName);
+                }
 
             channel.BasicConsume(queue: declaredQueue.QueueName,
                 autoAck: false,
@@ -93,18 +94,11 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 
         void BindToExchange(IModel channel, QueueDeclareOk declaredQueue, string exchangeName)
         {
-            if (RoutingKeys.Count > 0)
-                foreach (var route in RoutingKeys)
-                    channel.QueueBind(
-                        queue: declaredQueue.QueueName,
-                        exchange: exchangeName,
-                        routingKey: route
-                    );
-            else
+            foreach (var route in RoutingKeys)
                 channel.QueueBind(
                     queue: declaredQueue.QueueName,
                     exchange: exchangeName,
-                    routingKey: declaredQueue.QueueName
+                    routingKey: route
                 );
         }
     }

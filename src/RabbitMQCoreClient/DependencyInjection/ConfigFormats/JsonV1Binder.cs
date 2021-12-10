@@ -48,19 +48,25 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
                 throw new ClientConfigurationException($"The exchange {oldExchangeName} is " +
                     "not found in \"Exchange\" section.");
 
-            // Register a queue and bind it to exchange points.
-            var queueName = configuration[QueueName];
-            if (!string.IsNullOrEmpty(queueName))
-                RegisterQueue<QueueConfig, Queue>(builder,
-                    configuration.GetSection(QueueSection),
-                    exchange,
-                    (qConfig) => Queue.Create(qConfig));
+            if (configuration.GetSection(QueueSection).Exists())
+            {
+                // Register a queue and bind it to exchange points.
+                var queueName = configuration[QueueName];
+                if (!string.IsNullOrEmpty(queueName))
+                    RegisterQueue<QueueConfig, Queue>(builder,
+                        configuration.GetSection(QueueSection),
+                        exchange,
+                        (qConfig) => Queue.Create(qConfig));
+            }
 
-            // Register a subscription and link it to exchange points.
-            RegisterQueue<SubscriptionConfig, Subscription>(builder,
-                configuration.GetSection(SubscriptionSection),
-                exchange,
-                (qConfig) => Subscription.Create(qConfig));
+            if (configuration.GetSection(SubscriptionSection).Exists())
+            {
+                // Register a subscription and link it to exchange points.
+                RegisterQueue<SubscriptionConfig, Subscription>(builder,
+                    configuration.GetSection(SubscriptionSection),
+                    exchange,
+                    (qConfig) => Subscription.Create(qConfig));
+            }
 
             return builder;
         }
