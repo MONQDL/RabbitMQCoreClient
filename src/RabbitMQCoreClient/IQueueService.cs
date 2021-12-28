@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using RabbitMQ.Client;
+﻿using RabbitMQ.Client;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using System;
 using System.Collections.Generic;
@@ -8,22 +7,22 @@ using System.Threading.Tasks;
 namespace RabbitMQCoreClient
 {
     /// <summary>
-    /// Интерфейс описывает базовый набор методов, требующихся для реализации обработчика очереди сообщений RabbitMQ.
+    /// The interface describes the basic set of methods required to implement a RabbitMQ message queue handler.
     /// </summary>
     public interface IQueueService : IDisposable
     {
         /// <summary>
-        /// Интерфейс соединения RabbitMQ.
+        /// RabbitMQ connection interface.
         /// </summary>
         IConnection Connection { get; }
 
         /// <summary>
-        /// Канал для отправки данных RabbitMQ.
+        /// A channel for sending RabbitMQ data.
         /// </summary>
         IModel SendChannel { get; }
 
         /// <summary>
-        /// Настройки сервиса MQ.
+        /// MQ service settings.
         /// </summary>
         RabbitMQCoreClientOptions Options { get; }
 
@@ -38,15 +37,14 @@ namespace RabbitMQCoreClient
         event Action OnConnectionShutdown;
 
         /// <summary>
-        /// Отправить сообщение в очередь (потокобезопасный метод). <paramref name="obj" /> при это будет сериализован в Json.
+        /// Send the message to the queue (thread safe method). <paramref name="obj" /> will be serialized to Json.
         /// </summary>
-        /// <typeparam name="T">Тип класса сообщения.</typeparam>
-        /// <param name="obj">Экземпляр класса <typeparamref name="T" />, который будет сериализирован в JSON и отправлен в очередь.</param>
-        /// <param name="routingKey">Ключ маршрутизации, с которыми будет отправлено сообщение.</param>
-        /// <param name="exchange">Название точки обмена, в которую требуется послать сообщение.</param>
-        /// <param name="decreaseTtl">if set to <c>true</c> [decrease TTL].</param>
-        /// <param name="correlationId">Корреляционный Id, который используется для логирования сообщений.</param>
-        /// <param name="jsonSerializerSettings">The json serializer settings.</param>
+        /// <typeparam name="T">The class type of the message.</typeparam>
+        /// <param name="obj">An instance of the <typeparamref name="T" /> class that will be serialized to JSON and sent to the queue.</param>
+        /// <param name="routingKey">The routing key with which the message will be sent.</param>
+        /// <param name="exchange">The name of the exchange point to which the message is to be sent.</param>
+        /// <param name="decreaseTtl">If set to <c>true</c> [decrease TTL].</param>
+        /// <param name="correlationId">Correlation Id, which is used to log messages.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">jsonString - jsonString
         /// or
@@ -55,19 +53,19 @@ namespace RabbitMQCoreClient
         ValueTask SendAsync<T>(
             T obj,
             string routingKey,
-            string exchange = default,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default,
-            JsonSerializerSettings jsonSerializerSettings = default);
+            string? correlationId = default
+            );
 
         /// <summary>
-        /// Отправить сообщение в очередь (потокобезопасный метод).
+        /// Send a message to the queue (thread safe method).
         /// </summary>
         /// <param name="json">The json.</param>
-        /// <param name="routingKey">Ключ маршрутизации, с которыми будет отправлено сообщение.</param>
-        /// <param name="exchange">Название точки обмена, в которую требуется послать сообщение.</param>
-        /// <param name="decreaseTtl">Если <c>true</c> то уменьшить TTL.</param>
-        /// <param name="correlationId">Корреляционный Id, который используется для логирования сообщений.</param>
+        /// <param name="routingKey">The routing key with which the message will be sent.</param>
+        /// <param name="exchange">The name of the exchange point to which the message is to be sent.</param>
+        /// <param name="decreaseTtl">If <c>true</c> then decrease TTL.</param>
+        /// <param name="correlationId">Correlation Id, which is used to log messages.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">jsonString - jsonString
         /// or
@@ -75,19 +73,19 @@ namespace RabbitMQCoreClient
         ValueTask SendJsonAsync(
             string json,
             string routingKey,
-            string exchange = default,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default);
+            string? correlationId = default);
 
         /// <summary>
-        /// Отправить сырое сообщение в очередь с указанными свойствами <paramref name="props" /> (потокобезопасный метод).
+        /// Send a raw message to the queue with the specified properties <paramref name="props" /> (thread safe).
         /// </summary>
-        /// <param name="obj">Массив байт, которое будет отправлено в очередь как тело сообщения.</param>
-        /// <param name="props">Свойства сообщения, такие как доп. заголовки. Можно создать через Channel.CreateBasicProperties();</param>
-        /// <param name="routingKey">Ключ маршрутизации, с которым будет отправлено сообщение.</param>
-        /// <param name="exchange">Название точки обмена, в которую требуется послать сообщение.</param>
-        /// <param name="decreaseTtl">Если <c>true</c> то уменьшить TTL.</param>
-        /// <param name="correlationId">Корреляционный Id, который используется для логирования сообщений.</param>
+        /// <param name="obj">An array of bytes to be sent to the queue as the body of the message.</param>
+        /// <param name="props">Message properties such as add. headers. Can be created via `Channel.CreateBasicProperties()`.</param>
+        /// <param name="routingKey">The routing key with which the message will be sent.</param>
+        /// <param name="exchange">The name of the exchange point to which the message is to be sent.</param>
+        /// <param name="decreaseTtl">If <c>true</c> then decrease TTL.</param>
+        /// <param name="correlationId">Correlation Id, which is used to log messages.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">jsonString - jsonString
         /// or
@@ -96,21 +94,20 @@ namespace RabbitMQCoreClient
             byte[] obj,
             IBasicProperties props,
             string routingKey,
-            string exchange,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default);
+            string? correlationId = default);
 
         /// <summary>
-        /// Отправить пакетно сообщения в очередь (потокобезопасный метод). <paramref name="objs" /> при этом будут сериализованы в Json.
+        /// Send messages pack to the queue (thred safe method). <paramref name="objs" /> will be serialized to Json.
         /// </summary>
-        /// <typeparam name="T">Тип класса сообщения.</typeparam>
-        /// <param name="objs">Список объектов, которые являются экземплярами класса <typeparamref name="T" />,
-        /// которые будут сериализированы в JSON и отправлены в очередь.</param>
-        /// <param name="routingKey">Ключ маршрутизации, с которыми будет отправлено сообщение.</param>
-        /// <param name="exchange">Название точки обмена, в которую требуется послать сообщение.</param>
+        /// <typeparam name="T">The class type of the message.</typeparam>
+        /// <param name="objs">A list of objects that are instances of the class <typeparamref name="T" /> 
+        /// that will be serialized to JSON and sent to the queue.</param>
+        /// <param name="routingKey">The routing key with which the message will be sent.</param>
+        /// <param name="exchange">The name of the exchange point to which the message is to be sent.</param>
         /// <param name="decreaseTtl">if set to <c>true</c> [decrease TTL].</param>
-        /// <param name="correlationId">Корреляционный Id, который используется для логирования сообщений.</param>
-        /// <param name="jsonSerializerSettings">The json serializer settings.</param>
+        /// <param name="correlationId">Correlation Id, which is used to log messages.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">jsonString - jsonString
         /// or
@@ -119,19 +116,18 @@ namespace RabbitMQCoreClient
         ValueTask SendBatchAsync<T>(
             IEnumerable<T> objs,
             string routingKey,
-            string exchange = default,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default,
-            JsonSerializerSettings jsonSerializerSettings = default);
+            string? correlationId = default);
 
         /// <summary>
-        /// Отправить пакетно сообщения в очередь (потокобезопасный метод).
+        /// Send batch messages to the queue (thread safe method).
         /// </summary>
-        /// <param name="serializedJsonList">Список сериализованных json, которые требуется отправить в очередь пакетно.</param>
-        /// <param name="routingKey">Ключ маршрутизации, с которыми будет отправлено сообщение.</param>
-        /// <param name="exchange">Название точки обмена, в которую требуется послать сообщение.</param>
-        /// <param name="decreaseTtl">Если <c>true</c> то уменьшить TTL.</param>
-        /// <param name="correlationId">Корреляционный Id, который используется для логирования сообщений.</param>
+        /// <param name="serializedJsonList">A list of serialized json to be sent to the queue in batch.</param>
+        /// <param name="routingKey">The routing key with which the message will be sent.</param>
+        /// <param name="exchange">The name of the exchange point to which the message is to be sent.</param>
+        /// <param name="decreaseTtl">If <c>true</c> then decrease TTL.</param>
+        /// <param name="correlationId">Correlation Id, which is used to log messages.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">jsonString - jsonString
         /// or
@@ -139,18 +135,18 @@ namespace RabbitMQCoreClient
         ValueTask SendJsonBatchAsync(
             IEnumerable<string> serializedJsonList,
             string routingKey,
-            string exchange = default,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default);
+            string? correlationId = default);
 
         /// <summary>
-        /// Отправить пакетно сырые сообщение в очередь с указанными свойствами (потокобезопасный метод).
+        /// Send a batch raw message to the queue with the specified properties (thread safe).
         /// </summary>
-        /// <param name="objs">Список объектов и настроек, которые будет отправлены в очередь.</param>
-        /// <param name="routingKey">Ключ маршрутизации, с которым будет отправлено сообщение.</param>
-        /// <param name="exchange">Название точки обмена, в которую требуется послать сообщение.</param>
-        /// <param name="decreaseTtl">Если <c>true</c> то уменьшить TTL.</param>
-        /// <param name="correlationId">Корреляционный Id, который используется для логирования сообщений.</param>
+        /// <param name="objs">List of objects and settings that will be sent to the queue.</param>
+        /// <param name="routingKey">The routing key with which the message will be sent.</param>
+        /// <param name="exchange">The name of the exchange point to which the message is to be sent.</param>
+        /// <param name="decreaseTtl">If <c>true</c> then decrease TTL.</param>
+        /// <param name="correlationId">Correlation Id, which is used to log messages.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentException">jsonString - jsonString
         /// or
@@ -158,8 +154,8 @@ namespace RabbitMQCoreClient
         ValueTask SendBatchAsync(
             IEnumerable<(byte[] Body, IBasicProperties Props)> objs,
             string routingKey,
-            string exchange,
+            string? exchange = default,
             bool decreaseTtl = true,
-            string correlationId = default);
+            string? correlationId = default);
     }
 }

@@ -4,19 +4,17 @@ using System;
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 {
     /// <summary>
-    /// Параметры, позволяющие организовать собственные механизмы обработки исключений клиента.
+    /// Parameters that allow you to organize your own client exception handling mechanisms.
     /// </summary>
     public class ErrorHandlingOptions
     {
         /// <summary>
-        /// Событие обработчика исключения внутренних вызовов библиотеки. <c>null</c>
-        /// для использования обработчиков по умолчанию.
+        /// Internal library call exception handler event. <c>null</c> to use default handlers.
         /// </summary>
         public EventHandler<CallbackExceptionEventArgs>? CallbackExceptionHandler { get; set; } = null;
 
         /// <summary>
-        /// Событие обработчика исключения при невозможности восстановить соединение. <c>null</c>
-        /// для использования обработчиков по умолчанию.
+        /// An exception handler event when the connection cannot be reestablished. <c>null</c> to use default handlers.
         /// </summary>
         public EventHandler<ConnectionRecoveryErrorEventArgs>? ConnectionRecoveryErrorHandler { get; set; } = null;
     }

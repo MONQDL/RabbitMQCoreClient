@@ -1,16 +1,16 @@
 ﻿namespace RabbitMQCoreClient.Models
 {
     /// <summary>
-    /// Действия, производимые с ttl.
+    /// Actions performed with ttl.
     /// </summary>
     public enum TtlActions
     {
         /// <summary>
-        /// Уменьшить ttl сообщения.
+        /// Reduce ttl messages.
         /// </summary>
         Decrease,
         /// <summary>
-        /// Не изменять ttl сообщения.
+        /// Don't change ttl messages.
         /// </summary>
         DoNotChange
     }

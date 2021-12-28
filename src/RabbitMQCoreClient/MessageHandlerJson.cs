@@ -1,43 +1,42 @@
-﻿using Newtonsoft.Json;
-using RabbitMQCoreClient.Configuration;
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+﻿using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Models;
+using RabbitMQCoreClient.Serializers;
 using System;
 using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient
 {
     /// <summary>
-    /// Обработчик сообщения, принятого из очереди.
+    /// Handler for the message received from the queue.
     /// </summary>
-    /// <typeparam name="TModel">Тип модели, в котобую будет произведена десериализация.</typeparam>
+    /// <typeparam name="TModel">The type of model that will be deserialized into.</typeparam>
     /// <seealso cref="RabbitMQCoreClient.IMessageHandler" />
     public abstract class MessageHandlerJson<TModel> : IMessageHandler
     {
         /// <summary>
-        /// Методы маршрутизации входящего сообщения.
+        /// Incoming message routing methods.
         /// </summary>
         public ErrorMessageRouting ErrorMessageRouter { get; } = new ErrorMessageRouting();
 
         /// <summary>
-        /// Метод будет вызван при ошибке парсинга Json в модель.
+        /// The method will be called when there is an error parsing Json into the model.
         /// </summary>
         /// <param name="json">The json.</param>
-        /// <param name="e">The e.</param>
+        /// <param name="e">The exception.</param>
         /// <param name="args">The <see cref="RabbitMessageEventArgs"/> instance containing the event data.</param>
         /// <returns></returns>
-        protected virtual ValueTask OnParseError(string json, JsonException e, RabbitMessageEventArgs args) => default;
+        protected virtual ValueTask OnParseError(string json, Exception e, RabbitMessageEventArgs args) => default;
 
         /// <summary>
-        /// Обработать json сообщение.
+        /// Process json message.
         /// </summary>
-        /// <param name="message">Сообщение, десериализованное в объект.</param>
+        /// <param name="message">The message deserialized into an object.</param>
         /// <param name="args">The <see cref="RabbitMessageEventArgs" /> instance containing the event data.</param>
         /// <returns></returns>
         protected abstract Task HandleMessage(TModel message, RabbitMessageEventArgs args);
 
         /// <summary>
-        /// Сообщение в формате Json.
+        /// Raw Json formatted message.
         /// </summary>
         protected string? RawJson { get; set; }
 
@@ -46,6 +45,11 @@ namespace RabbitMQCoreClient
         /// </summary>
         public ConsumerHandlerOptions? Options { get; set; }
 
+        /// <summary>
+        /// The default json serializer.
+        /// </summary>
+        public IMessageSerializer Serializer { get; set; } = new NewtonsoftJsonMessageSerializer();
+
         /// <inheritdoc />
         public async Task HandleMessage(string message, RabbitMessageEventArgs args)
         {
@@ -53,12 +57,15 @@ namespace RabbitMQCoreClient
             TModel messageModel;
             try
             {
-                messageModel = JsonConvert.DeserializeObject<TModel>(message, Options?.JsonSerializerSettings ?? AppConstants.DefaultSerializerSettings);
+                var obj = Serializer.Deserialize<TModel>(message);
+                if (obj is null)
+                    throw new InvalidOperationException("The json parser returns null.");
+                messageModel = obj;
             }
-            catch (JsonException e)
+            catch (Exception e)
             {
                 await OnParseError(message, e, args);
-                // Падаем на верхнеуровневый обработчик.
+                // Fall to the top-level exception handler.
                 throw;
             }
 

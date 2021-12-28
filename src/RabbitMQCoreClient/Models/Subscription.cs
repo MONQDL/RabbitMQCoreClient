@@ -4,13 +4,13 @@ using System.Collections.Generic;
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 {
     /// <summary>
-    /// Очередь сообщения для подписки на события.
-    /// Очередь имеет автоматическое наименование. При отсоединении клиента от сервера очередь автоматически удаляется.
+    /// Message queue for subscribing to events. 
+    /// The queue is automatically named. When the client disconnects from the server, the queue is automatically deleted.
     /// </summary>
     public sealed class Subscription : QueueBase
     {
         public Subscription()
-            :base(null, false, true, true)
+            : base(null, false, true, true)
         { }
 
         public static Subscription Create(SubscriptionConfig queueConfig)

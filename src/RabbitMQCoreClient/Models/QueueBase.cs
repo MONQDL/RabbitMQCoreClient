@@ -1,12 +1,13 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQCoreClient.Exceptions;
+using System;
 using System.Collections.Generic;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 {
     /// <summary>
-    /// Параметры, которые будут применены к очереди сообщений.
+    /// Options to be applied to the message queue.
     /// </summary>
     public abstract class QueueBase
     {
@@ -39,22 +40,22 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
         public virtual bool AutoDelete { get; protected set; }
 
         /// <summary>
-        /// Название точки обмена, в которую будут попадать сообщения, для которых был получен reject или nack.
+        /// The name of the exchange point that will receive messages for which a reject or nack was received.
         /// </summary>
         public virtual string? DeadLetterExchange { get; set; }
 
         /// <summary>
-        /// Список дополнительных параметров, которые будут использоваться при инициализации очереди.
+        /// List of additional parameters that will be used when initializing the queue.
         /// </summary>
         public virtual IDictionary<string, object> Arguments { get; set; } = new Dictionary<string, object>();
 
         /// <summary>
-        /// Список ключей маршрутизации для очереди.
+        /// ist of routing keys for the queue.
         /// </summary>
         public virtual HashSet<string> RoutingKeys { get; set; } = new HashSet<string>();
 
         /// <summary>
-        /// Список точек обмена, к которым привязывается очередь.
+        /// The list of exchange points to which the queue is bound.
         /// </summary>
         public virtual HashSet<string> Exchanges { get; set; } = new HashSet<string>();
 
@@ -78,31 +79,26 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
             if (declaredQueue is null)
                 throw new QueueBindException("Queue is not properly binded.");
 
-            foreach (var exchangeName in Exchanges)
-            {
-                BindToExchange(channel, declaredQueue, exchangeName);
-            }
+            if (RoutingKeys.Count > 0)
+                foreach (var exchangeName in Exchanges)
+                {
+                    BindToExchange(channel, declaredQueue, exchangeName);
+                }
 
             channel.BasicConsume(queue: declaredQueue.QueueName,
                 autoAck: false,
-                consumer: consumer
+                consumer: consumer,
+                consumerTag: $"amq.{declaredQueue.QueueName}.{Guid.NewGuid()}"
                 );
         }
 
         void BindToExchange(IModel channel, QueueDeclareOk declaredQueue, string exchangeName)
         {
-            if (RoutingKeys.Count > 0)
-                foreach (var route in RoutingKeys)
-                    channel.QueueBind(
-                        queue: declaredQueue.QueueName,
-                        exchange: exchangeName,
-                        routingKey: route
-                    );
-            else
+            foreach (var route in RoutingKeys)
                 channel.QueueBind(
                     queue: declaredQueue.QueueName,
                     exchange: exchangeName,
-                    routingKey: declaredQueue.QueueName
+                    routingKey: route
                 );
         }
     }

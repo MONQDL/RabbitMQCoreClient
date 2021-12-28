@@ -4,25 +4,25 @@ using System.Collections.Generic;
 namespace RabbitMQCoreClient.DependencyInjection.ConfigModels
 {
     /// <summary>
-    /// Простая настраиваемая очередь сообщений.
+    /// Simple custom message queue.
     /// </summary>
     public class QueueConfig
     {
         string? _name;
 
         /// <summary>
-        /// Название очереди сообщений.
+        /// The name of the message queue.
         /// </summary>
-        [Obsolete("Стоит перейти на использование Name")]
+        [Obsolete("It is worth switching to using Name.")]
         public string QueueName { get; set; } = default!;
 
         /// <summary>
-        /// Название очереди сообщений.
+        /// The name of the message queue.
         /// </summary>
         public string Name
         {
             get => string.IsNullOrEmpty(_name) ? QueueName : _name;
-            protected set => _name = value;
+            set => _name = value;
         }
 
         /// <summary>
@@ -41,22 +41,22 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigModels
         public bool AutoDelete { get; set; } = false;
 
         /// <summary>
-        /// Название точки обмена, в которую будут попадать сообщения, для которых был получен reject или nack.
+        /// The name of the exchange point that will receive messages for which a reject or nack was received.
         /// </summary>
         public string? DeadLetterExchange { get; set; }
 
         /// <summary>
-        /// Список дополнительных параметров, которые будут использоваться при инициализации очереди.
+        /// List of additional parameters that will be used when initializing the queue.
         /// </summary>
         public IDictionary<string, object> Arguments { get; set; } = new Dictionary<string, object>();
 
         /// <summary>
-        /// Список ключей маршрутизации для очереди.
+        /// List of routing keys for the queue.
         /// </summary>
         public HashSet<string> RoutingKeys { get; set; } = new HashSet<string>();
 
         /// <summary>
-        /// Список точек обмена, к которым привязывается очередь.
+        /// The list of exchange points to which the queue is bound.
         /// </summary>
         public HashSet<string> Exchanges { get; set; } = new HashSet<string>();
     }

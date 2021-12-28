@@ -10,12 +10,12 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection
     public class Exchange
     {
         /// <summary>
-        /// Название точки обмена.
+        /// Exchange point name.
         /// </summary>
         public string Name => Options.Name;
 
         /// <summary>
-        /// Конфигурационные настройки точки обмена.
+        /// Exchange point configuration settings.
         /// </summary>
         public ExchangeOptions Options { get; } = new ExchangeOptions();
 

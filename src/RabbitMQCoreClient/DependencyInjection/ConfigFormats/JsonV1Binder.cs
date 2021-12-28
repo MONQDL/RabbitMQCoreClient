@@ -22,7 +22,7 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
             if (configuration is null)
                 return builder;
 
-            // Точка обмена будет точкой по умолчанию.
+            // The exchange point will be the default point.
             var oldExchangeName = configuration[ExchangeName];
             if (!string.IsNullOrEmpty(oldExchangeName))
                 builder.AddExchange(oldExchangeName, options: new ExchangeOptions { Name = oldExchangeName, IsDefault = true });
@@ -36,33 +36,37 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
             if (configuration is null)
                 return builder;
 
-            // Точка обмена будет точкой по умолчанию.
+            // Try to detect old configuration format.
+            // The exchange point will be the default point.
             var oldExchangeName = configuration[ExchangeName];
-
-            var queueName = configuration[QueueName];
-            if (string.IsNullOrEmpty(queueName))
+            if (string.IsNullOrEmpty(oldExchangeName))
                 return builder;
 
-            // Обнаружен старый формат очереди:
-            if (string.IsNullOrEmpty(oldExchangeName))
-                throw new ClientConfigurationException(@"При использовании конфигурации v1 требуется указать { ""Exchange"": { ""Name"": ""string"" } }");
-
+            // Old queue format detected.
             var exchange = builder.Builder.Exchanges.FirstOrDefault(x => x.Name == oldExchangeName);
             if (exchange is null)
-                throw new ClientConfigurationException($"The exchange {oldExchangeName} configured in queue {queueName} " +
-                    "not found in Exchanges section.");
+                throw new ClientConfigurationException($"The exchange {oldExchangeName} is " +
+                    "not found in \"Exchange\" section.");
 
-            // Регистрируем очередь и привязываем ее к точкам обмена.
-            RegisterQueue<QueueConfig, Queue>(builder,
-                configuration.GetSection(QueueSection),
-                exchange,
-                (qConfig) => Queue.Create(qConfig));
+            if (configuration.GetSection(QueueSection).Exists())
+            {
+                // Register a queue and bind it to exchange points.
+                var queueName = configuration[QueueName];
+                if (!string.IsNullOrEmpty(queueName))
+                    RegisterQueue<QueueConfig, Queue>(builder,
+                        configuration.GetSection(QueueSection),
+                        exchange,
+                        (qConfig) => Queue.Create(qConfig));
+            }
 
-            // Регистрируем подписку и привязываем ее к точкам обмена.
-            RegisterQueue<SubscriptionConfig, Subscription>(builder,
-                configuration.GetSection(SubscriptionSection),
-                exchange,
-                (qConfig) => Subscription.Create(qConfig));
+            if (configuration.GetSection(SubscriptionSection).Exists())
+            {
+                // Register a subscription and link it to exchange points.
+                RegisterQueue<SubscriptionConfig, Subscription>(builder,
+                    configuration.GetSection(SubscriptionSection),
+                    exchange,
+                    (qConfig) => Subscription.Create(qConfig));
+            }
 
             return builder;
         }
@@ -96,7 +100,7 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
         static void AddQueue<T>(IRabbitMQCoreClientConsumerBuilder builder, T queue)
             where T : QueueBase
         {
-            // Так себе решение, но зато без дубляжа
+            // So-so solution, but without dubbing.
             switch (queue)
             {
                 case Queue q: builder.AddQueue(q); break;

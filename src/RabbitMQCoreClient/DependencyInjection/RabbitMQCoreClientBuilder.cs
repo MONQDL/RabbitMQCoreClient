@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using RabbitMQCoreClient.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,5 +24,8 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection
 
         /// <inheritdoc />
         public Exchange? DefaultExchange => Exchanges.FirstOrDefault(x => x.Options.IsDefault);
+
+        /// <inheritdoc />
+        public IMessageSerializer Serializer { get; set; }
     }
 }

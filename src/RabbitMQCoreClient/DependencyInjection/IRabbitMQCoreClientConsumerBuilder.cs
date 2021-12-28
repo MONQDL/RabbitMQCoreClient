@@ -12,17 +12,17 @@ namespace Microsoft.Extensions.DependencyInjection
         IRabbitMQCoreClientBuilder Builder { get; }
 
         /// <summary>
-        /// Список сервисов, зарегистрированных в DI.
+        /// List of services registered in DI.
         /// </summary>
         IServiceCollection Services { get; }
 
         /// <summary>
-        /// Список сконфигурированных очередей.
+        /// List of configured queues.
         /// </summary>
         IList<QueueBase> Queues { get; }
 
         /// <summary>
-        /// Список зарегистрированных обработчиков событий по ключу маршрутизации.
+        /// List of registered event handlers by routing key.
         /// </summary>
         Dictionary<string, (Type Type, ConsumerHandlerOptions Options)> RoutingHandlerTypes { get; }
     }

@@ -1,12 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using RabbitMQCoreClient.Configuration;
 using RabbitMQCoreClient.Configuration.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Exceptions;
+using RabbitMQCoreClient.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -27,6 +26,7 @@ namespace RabbitMQCoreClient
         readonly ILogger<QueueServiceImpl> _log;
         static readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1);
         readonly IList<Exchange> _exchanges;
+        readonly IMessageSerializer _serializer;
         bool _connectionBlocked = false;
         IConnection? _connection;
         IModel? _sendChannel;
@@ -38,14 +38,14 @@ namespace RabbitMQCoreClient
 
 
         /// <summary>
-        /// Интерфейс соединения RabbitMQ.
+        /// RabbitMQ connection interface.
         /// </summary>
-        public IConnection Connection => _connection!; // Пока что вот так. Свойство стопудово инициализируется в конструкторе.
+        public IConnection Connection => _connection!; // So far, that's it. The property is completely initialized in the constructor.
 
         /// <summary>
         /// Sending channel.
         /// </summary>
-        public IModel SendChannel => _sendChannel!; // Пока что вот так. Свойство стопудово инициализируется в конструкторе.
+        public IModel SendChannel => _sendChannel!; // So far, that's it. The property is completely initialized in the constructor.
 
         /// <summary>
         /// Occurs when connection restored after reconnect.
@@ -62,7 +62,7 @@ namespace RabbitMQCoreClient
         int _reconnectAttemptsCount = 0;
 
         /// <summary>
-        /// Инициализирует новый экземпляр класса <see cref="QueueServiceImpl" />.
+        /// Initializes a new instance of the class <see cref="QueueServiceImpl" />.
         /// </summary>
         /// <param name="options">The options.</param>
         /// <param name="loggerFactory">The logger factory.</param>
@@ -73,6 +73,7 @@ namespace RabbitMQCoreClient
             Options = options ?? throw new ArgumentNullException(nameof(options), $"{nameof(options)} is null.");
             _log = loggerFactory.CreateLogger<QueueServiceImpl>();
             _exchanges = builder.Exchanges;
+            _serializer = builder.Serializer;
 
             Reconnect(); // Start connection cycle.
         }
@@ -82,7 +83,7 @@ namespace RabbitMQCoreClient
         /// </summary>
         public void Connect()
         {
-            // Защита от повторного вызова метода Connect();
+            // Protection against repeated calls to the `Connect()` method.
             if (_connection?.IsOpen == true)
             {
                 _log.LogWarning("Connection already open.");
@@ -204,15 +205,14 @@ namespace RabbitMQCoreClient
             string routingKey,
             string? exchange = default,
             bool decreaseTtl = true,
-            string? correlationId = default,
-            JsonSerializerSettings? jsonSerializerSettings = default)
+            string? correlationId = default
+            )
         {
             // Проверка на Null без боксинга. // https://stackoverflow.com/a/864860
             if (EqualityComparer<T>.Default.Equals(obj, default))
                 throw new ArgumentNullException(nameof(obj));
 
-            var serializeSettings = jsonSerializerSettings ?? Options.JsonSerializerSettings ?? AppConstants.DefaultSerializerSettings;
-            var serializedObj = JsonConvert.SerializeObject(obj, serializeSettings);
+            var serializedObj = _serializer.Serialize(obj);
             return SendJsonAsync(
                         serializedObj,
                         exchange: exchange,
@@ -236,7 +236,7 @@ namespace RabbitMQCoreClient
             var body = Encoding.UTF8.GetBytes(json);
             var properties = CreateBasicJsonProperties();
 
-            _log.LogDebug("Sending json message {message} with routing key {routingKey}.", json, exchange, routingKey);
+            _log.LogDebug("Sending json message {message} to exchange {exchange} with routing key {routingKey}.", json, exchange, routingKey);
 
             return SendAsync(body,
                 props: properties,
@@ -287,14 +287,12 @@ namespace RabbitMQCoreClient
             string routingKey,
             string? exchange = default,
             bool decreaseTtl = true,
-            string? correlationId = default,
-            JsonSerializerSettings? jsonSerializerSettings = default)
+            string? correlationId = default)
         {
             var messages = new List<string>();
-            var serializeSettings = jsonSerializerSettings ?? Options.JsonSerializerSettings ?? AppConstants.DefaultSerializerSettings;
             foreach (var obj in objs)
             {
-                messages.Add(JsonConvert.SerializeObject(obj, serializeSettings));
+                messages.Add(_serializer.Serialize(obj));
             }
 
             return SendJsonBatchAsync(
@@ -325,7 +323,7 @@ namespace RabbitMQCoreClient
                 messages.Add((body, props));
             }
 
-            _log.LogDebug("Sending json messages batch with routing key {routingKey}.", exchange, routingKey);
+            _log.LogDebug("Sending json messages batch to exchange {exchange} with routing key {routingKey}.", exchange, routingKey);
 
             return SendBatchAsync(
                 objs: messages,
@@ -340,7 +338,7 @@ namespace RabbitMQCoreClient
         public async ValueTask SendBatchAsync(
             IEnumerable<(byte[] Body, IBasicProperties Props)> objs,
             string routingKey,
-            string? exchange,
+            string? exchange = default,
             bool decreaseTtl = true,
             string? correlationId = default)
         {

@@ -3,18 +3,18 @@
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 {
     /// <summary>
-    /// Настройки точки обмена
+    /// Exchange point settings.
     /// </summary>
     public class ExchangeOptions
     {
         /// <summary>
-        /// Название точки обмена.
+        /// Exchange point name.
         /// </summary>
         public string Name { get; set; } = default!;
 
         /// <summary>
-        /// Тип точки обмена.
-        /// Возможные значения: "direct", "topic", "fanout", "headers"
+        /// Exchange point type.
+        /// Possible values: "direct", "topic", "fanout", "headers"
         /// </summary>
         public string Type { get; set; } = "direct";
 
@@ -33,16 +33,16 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
         public bool AutoDelete { get; set; } = false;
 
         /// <summary>
-        /// Набор дополнительных настроек точки обмена.
+        /// A set of additional settings for the exchange point.
         /// </summary>
         public IDictionary<string, object> Arguments { get; set; } = new Dictionary<string, object>();
 
         /// <summary>
-        /// Устанавливает значение "Точка обмена по умолчанию".
-        /// По умолчанию: false.
+        /// Sets the Default Interchange Point value.
+        /// Default: false.
         /// </summary>
         /// <value>
-        ///   <c>true</c>, если точка обмена является точкой по умолчанию; иначе, <c>false</c>.
+        ///   <c>true</c> if the exchange point is the default point; otherwise, <c>false</c>.
         /// </value>
         public bool IsDefault { get; set; } = false;
     }

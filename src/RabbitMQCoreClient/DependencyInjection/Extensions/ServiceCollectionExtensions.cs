@@ -8,7 +8,7 @@ using System;
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
-    /// Класс, содержащий методы-расширения для создания интерфейса настройки обработчика сообщений RabbitMQ
+    /// Class containing extension methods for creating a RabbitMQ message handler configuration interface.
     /// <see cref="IRabbitMQCoreClientConsumerBuilder"/>.
     /// </summary>
     public static class ServiceCollectionExtensions
@@ -19,17 +19,19 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.AddRequiredPlatformServices();
 
+            builder.AddDefaultSerializer();
+
             services.TryAddSingleton<IRabbitMQCoreClientBuilder>(builder);
 
             return builder;
         }
 
         /// <summary>
-        /// Создать экземпляр класса настройки обработчика сообщений RabbitMQ.
+        /// Create an instance of the RabbitMQ message handler configuration class.
         /// </summary>
-        /// <param name="services">Список сервисов, зарегистрированных в DI.</param>
-        /// <param name="configuration">Секция конфигурации, содержащая поля для настройки сервиса обработки сообщений.</param>
-        /// <param name="setupAction">Используйте данный метод, если требуется переопределить конфигурацию.</param>
+        /// <param name="services">List of services registered in DI.</param>
+        /// <param name="configuration">Configuration section containing fields for configuring the message processing service.</param>
+        /// <param name="setupAction">Use this method if you need to override the configuration.</param>
         public static IRabbitMQCoreClientBuilder AddRabbitMQCoreClient(
             this IServiceCollection services,
             IConfiguration configuration,
@@ -37,10 +39,10 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             RegisterOptions(services, configuration, setupAction);
 
-            // Производим автонастройку очередей из настроек IConfiguration.
+            // We perform auto-tuning of queues from IConfiguration settings.
             var builder = services.AddRabbitMQCoreClient();
 
-            // Поддержка старого формата регистрации очереди.
+            // Support for the old queue registration format.
             builder.RegisterV1Configuration(configuration);
             builder.RegisterV2Configuration(configuration);
 
@@ -48,7 +50,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Создать экземпляр класса настройки обработчика сообщений RabbitMQ.
+        /// Create an instance of the RabbitMQ message handler configuration class.
         /// </summary>
         public static IRabbitMQCoreClientBuilder AddRabbitMQCoreClient(this IServiceCollection services,
             Action<RabbitMQCoreClientOptions>? setupAction)
@@ -58,20 +60,20 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
-        /// Создать экземпляр класса настройки обработчика сообщений RabbitMQ.
+        /// Create an instance of the RabbitMQ message handler configuration class.
         /// </summary>
-        /// <param name="services">Список сервисов, зарегистрированных в DI.</param>
-        /// <param name="configuration">Секция конфигурации, содержащая поля для настройки сервиса обработки сообщений.</param>
-        /// <param name="setupAction">Используйте данный метод, если требуется переопределить конфигурацию.</param>
+        /// <param name="services">List of services registered in DI.</param>
+        /// <param name="configuration">Configuration section containing fields for configuring the message processing service.</param>
+        /// <param name="setupAction">Use this method if you need to override the configuration.</param>
         public static IRabbitMQCoreClientConsumerBuilder AddRabbitMQCoreClientConsumer(this IServiceCollection services,
             IConfiguration configuration, Action<RabbitMQCoreClientOptions>? setupAction = null)
         {
-            // Производим автонастройку очередей из настроек IConfiguration.
+            // We perform auto-tuning of queues from IConfiguration settings.
             var builder = services.AddRabbitMQCoreClient(configuration, setupAction);
 
             var consumerBuilder = builder.AddConsumer();
 
-            // Поддержка старого формата регистрации очереди.
+            // Support for the old queue registration format.
             consumerBuilder.RegisterV1Configuration(configuration);
             consumerBuilder.RegisterV2Configuration(configuration);
 

@@ -27,11 +27,13 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 5.0.x
+          dotnet-version: 6.0.x
       - name: Restore dependencies
         run: dotnet restore
       - name: Build
-        run: dotnet build -c Release --no-restore
+        run: |
+          dotnet build -c Release --no-restore
+          echo "APP_VERSION=v$(cat ${MAINAPP_ASP_PROJECT_PATH}/*.csproj | grep '<Version>' | head -n 1 | awk -F '>' '{print $2;}' | awk -F '<' '{print $1;}' | sed 's/\-\*//g')" >> $GITHUB_ENV
       - name: Test
         run: |
           dotnet add $TEST_MAINAPP_ASP_PROJECT_PATH package coverlet.msbuild --version ${coverletMsbuildVersion:-3.0.3} > /dev/null 2>&1
@@ -54,8 +56,7 @@ jobs:
         uses: actions/create-release@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_VERSION: $(cat ${MAINAPP_ASP_PROJECT_PATH}/*.csproj | grep '<Version>' | head -n 1 | awk -F '>' '{print $2;}' | awk -F '<' '{print $1;}' | sed 's/\-\*//g')
         with:
-          tag_name: ${{ env.TAG_VERSION }}
+          tag_name: ${{ env.APP_VERSION }}
           draft: false
           prerelease: false

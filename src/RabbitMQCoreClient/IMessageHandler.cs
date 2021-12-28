@@ -1,23 +1,24 @@
 ﻿using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Models;
+using RabbitMQCoreClient.Serializers;
 using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient
 {
     /// <summary>
-    /// Интерфейс обработчика, принятого из очереди сообщения.
+    /// The interface for the handler received from the message queue.
     /// </summary>
     public interface IMessageHandler
     {
         /// <summary>
-        /// Обработать сообщение асинхронно.
+        /// Process the message asynchronously.
         /// </summary>
-        /// <param name="message">Входящая строка json с объектом и его типом.</param>
+        /// <param name="message">Input json string with object and its type.</param>
         /// <param name="args">The <see cref="RabbitMessageEventArgs"/> instance containing the message data.</param>
         Task HandleMessage(string message, RabbitMessageEventArgs args);
 
         /// <summary>
-        /// Указания маршрутизатору в случае исключения при обработке сообщения.
+        /// Instructions to the router in case of an exception while processing a message.
         /// </summary>
         ErrorMessageRouting ErrorMessageRouter { get; }
 
@@ -25,5 +26,10 @@ namespace RabbitMQCoreClient
         /// Consumer handler options, that was used during configuration.
         /// </summary>
         ConsumerHandlerOptions? Options { get; set; }
+
+        /// <summary>
+        /// The default json serializer.
+        /// </summary>
+        IMessageSerializer Serializer { get; set; }
     }
 }

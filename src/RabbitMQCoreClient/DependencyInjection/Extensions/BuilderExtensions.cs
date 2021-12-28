@@ -32,6 +32,14 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// Use default serializer as NewtonsoftJson.
+        /// </summary>
+        public static IRabbitMQCoreClientBuilder AddDefaultSerializer(this IRabbitMQCoreClientBuilder builder)
+        {
+            return builder.AddNewtonsoftJson();
+        }
+
+        /// <summary>
         /// Add exchange connection to RabbitMQ.
         /// </summary>
         /// <param name="builder">The builder.</param>
@@ -231,16 +239,16 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
-        static void AddHandlerToBuilder(IRabbitMQCoreClientConsumerBuilder builder, 
-            Type handlerType, 
-            ConsumerHandlerOptions options, 
+        static void AddHandlerToBuilder(IRabbitMQCoreClientConsumerBuilder builder,
+            Type handlerType,
+            ConsumerHandlerOptions options,
             IList<string> routingKeys)
         {
             foreach (var routingKey in routingKeys)
             {
                 if (builder.RoutingHandlerTypes.ContainsKey(routingKey))
-                    throw new ClientConfigurationException("Ключ маршрутизации уже обрабатывается " +
-                        $"обработчиком типа {builder.RoutingHandlerTypes[routingKey].Type.FullName}.");
+                    throw new ClientConfigurationException("The routing key is already being processed by a handler like " +
+                        $"{builder.RoutingHandlerTypes[routingKey].Type.FullName}.");
 
                 builder.RoutingHandlerTypes.Add(routingKey, (handlerType, options));
             }
