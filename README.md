@@ -127,6 +127,44 @@ var bodyList = Enumerable.Range(1, 10).Select(x => new SimpleObj { Name = $"test
 await queueService.SendBatchAsync(bodyList, "test_routing_key");
 ```
 
+#### Buffered sending batch messages
+From the version v5.1.0 there was introduced a new mechanic of the sending messages using separate thread. 
+You can use this feature when you have to send many parallel small messages to the queue (for example from the ASP.NET requests).
+The feature allows you to buffer that messages at the inmemory list and flush them at once using the `SendBatchAsync` method.
+
+To use this feature register it at DI:
+
+```csharp
+using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+
+...
+services.AddBatchQueueSender();
+```
+
+Instead of injecting the interface `RabbitMQCoreClient.IQueueService` inject `RabbitMQCoreClient.BatchQueueSender.IQueueEventsBufferEngine`.
+Then use methods to queue your messages. The methods are thread safe.
+```csharp
+Task AddEvent<T>(T @event, string routingKey);
+Task AddEvent<T>(IEnumerable<T> events, string routingKey);
+```
+
+You can configure the flush options by Action or IConfiguration. Example of the configuration JSON:
+```json
+{
+  "QueueFlushSettings": {
+    "EventsFlushPeriodSec": 2,
+    "EventsFlushCount: 500
+  }
+}
+```
+
+```csharp
+using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+
+...
+services.AddBatchQueueSender(configuration.GetSection("QueueFlushSettings"));
+```
+
 ### Receiving and processing messages
 
 ##### Console application

@@ -9,6 +9,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+using RabbitMQCoreClient.BatchQueueSender;
 
 namespace RabbitMQCoreClient.ConsoleClient
 {
@@ -62,6 +64,8 @@ namespace RabbitMQCoreClient.ConsoleClient
                     })
                 });
 
+            services.AddBatchQueueSender(x => x.EventsFlushPeriodSec = 5);
+
             // For sending and consuming messages full configuration.
             //services
             //    .AddRabbitMQCoreClient(config)
@@ -75,6 +79,7 @@ namespace RabbitMQCoreClient.ConsoleClient
 
             var queueService = serviceProvider.GetRequiredService<IQueueService>();
             var consumer = serviceProvider.GetRequiredService<IQueueConsumer>();
+            var batchSender = serviceProvider.GetRequiredService<IQueueEventsBufferEngine>();
             consumer.Start();
 
             //var body = new SimpleObj { Name = "test sending" };
@@ -99,7 +104,7 @@ namespace RabbitMQCoreClient.ConsoleClient
             //        }
             //    }));
             CancellationTokenSource source = new CancellationTokenSource();
-            var longRunningTask = CreateSender(queueService, source.Token);
+            var longRunningTask = CreateBatchSender(batchSender, source.Token);
 
             //var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
             //await queueService.SendBatchAsync(bodyList, "test_routing_key", jsonSerializerSettings: new Newtonsoft.Json.JsonSerializerSettings()).AsTask();
@@ -112,15 +117,30 @@ namespace RabbitMQCoreClient.ConsoleClient
 
         static async Task CreateSender(IQueueService queueService, CancellationToken token)
         {
-            while (true)
+            while (!token.IsCancellationRequested)
             {
-                if (token.IsCancellationRequested)
-                    return;
                 try
                 {
                     await Task.Delay(3000, token);
                     var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
-                    await queueService.SendBatchAsync(bodyList, "test_routing_key_subscription").AsTask();
+                    await queueService.SendBatchAsync(bodyList, "test_routing_key_subscription");
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine("Error during message send " + e.Message);
+                }
+            }
+        }
+
+        static async Task CreateBatchSender(IQueueEventsBufferEngine batchSender, CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(500, token);
+                    var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
+                    await batchSender.AddEvent(bodyList, "test_routing_key_subscription");
                 }
                 catch (Exception e)
                 {
