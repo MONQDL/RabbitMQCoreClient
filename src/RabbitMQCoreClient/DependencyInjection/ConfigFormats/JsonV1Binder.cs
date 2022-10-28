@@ -15,6 +15,7 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
         const string QueueName = "Queue:QueueName";
         const string ExchangeName = "Exchange:Name";
         const string SubscriptionSection = "Subscription";
+        const string UseQuorumQueuesName = "UseQuorumQueues";
 
         public static IRabbitMQCoreClientBuilder RegisterV1Configuration(this IRabbitMQCoreClientBuilder builder,
             IConfiguration? configuration)
@@ -47,6 +48,8 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
             if (exchange is null)
                 throw new ClientConfigurationException($"The exchange {oldExchangeName} is " +
                     "not found in \"Exchange\" section.");
+
+            var useQuorumQueues = configuration.GetValue<bool>(UseQuorumQueuesName);
 
             if (configuration.GetSection(QueueSection).Exists())
             {

@@ -11,12 +11,13 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
     /// </summary>
     public abstract class QueueBase
     {
-        protected QueueBase(string? name, bool durable, bool exclusive, bool autoDelete)
+        protected QueueBase(string? name, bool durable, bool exclusive, bool autoDelete, bool useQuorum)
         {
             Name = name;
             Durable = durable;
             Exclusive = exclusive;
             AutoDelete = autoDelete;
+            UseQuorum = useQuorum;
         }
 
         /// <summary>
@@ -45,6 +46,11 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
         public virtual string? DeadLetterExchange { get; set; }
 
         /// <summary>
+        /// While creating the queue use parameter "x-queue-type": "quorum".
+        /// </summary>
+        public virtual bool UseQuorum { get; set; } = false;
+
+        /// <summary>
         /// List of additional parameters that will be used when initializing the queue.
         /// </summary>
         public virtual IDictionary<string, object> Arguments { get; set; } = new Dictionary<string, object>();
@@ -69,6 +75,9 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
             if (!string.IsNullOrWhiteSpace(DeadLetterExchange)
                 && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.DeadLetterExchangeHeader))
                 Arguments.Add(AppConstants.RabbitMQHeaders.DeadLetterExchangeHeader, DeadLetterExchange);
+
+            if (UseQuorum && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.QueueTypeHeader))
+                Arguments.Add(AppConstants.RabbitMQHeaders.QueueTypeHeader, "quorum");
 
             var declaredQueue = channel.QueueDeclare(queue: Name ?? string.Empty,
                     durable: Durable,

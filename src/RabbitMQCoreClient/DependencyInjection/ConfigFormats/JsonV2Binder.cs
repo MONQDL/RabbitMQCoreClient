@@ -14,7 +14,8 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
         const string QueuesSection = "Queues";
         const string SubscriptionsSection = "Subscriptions";
 
-        public static IRabbitMQCoreClientBuilder RegisterV2Configuration(this IRabbitMQCoreClientBuilder builder, IConfiguration configuration)
+        public static IRabbitMQCoreClientBuilder RegisterV2Configuration(this IRabbitMQCoreClientBuilder builder, 
+            IConfiguration configuration)
         {
             if (configuration is null)
                 return builder;

@@ -2,12 +2,8 @@
 
 Library Version: v5
 
-## Change Log
-
-See CHANGELOG.md
-
 The library allows you to quickly connect and get started with the RabbitMQ message broker.
-The library serializes and deserializes messages to JSON using Newtonsoft.Json as default or System.Text.Json. 
+The library serializes and deserializes messages to JSON using _Newtonsoft.Json_ as default or _System.Text.Json_. 
 The library allows you to work with multiple queues, connected to various exchanges. It allows you to work with subscriptions.
 The library implements a custom errored messages mechanism, using the TTL and the dead message queue.
 
@@ -129,6 +125,44 @@ await queueService.SendAsync(body, "test_routing_key");
 // Send the list of messages to the queue in batch.
 var bodyList = Enumerable.Range(1, 10).Select(x => new SimpleObj { Name = $"test sending {x}" });
 await queueService.SendBatchAsync(bodyList, "test_routing_key");
+```
+
+#### Buffer messages in memory and send them at separate thread
+From the version v5.1.0 there was introduced a new mechanic of the sending messages using separate thread. 
+You can use this feature when you have to send many parallel small messages to the queue (for example from the ASP.NET requests).
+The feature allows you to buffer that messages at the inmemory list and flush them at once using the `SendBatchAsync` method.
+
+To use this feature register it at DI:
+
+```csharp
+using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+
+...
+services.AddBatchQueueSender();
+```
+
+Instead of injecting the interface `RabbitMQCoreClient.IQueueService` inject `RabbitMQCoreClient.BatchQueueSender.IQueueEventsBufferEngine`.
+Then use methods to queue your messages. The methods are thread safe.
+```csharp
+Task AddEvent<T>(T @event, string routingKey);
+Task AddEvent<T>(IEnumerable<T> events, string routingKey);
+```
+
+You can configure the flush options by Action or IConfiguration. Example of the configuration JSON:
+```json
+{
+  "QueueFlushSettings": {
+    "EventsFlushPeriodSec": 2,
+    "EventsFlushCount": 500
+  }
+}
+```
+
+```csharp
+using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+
+...
+services.AddBatchQueueSender(configuration.GetSection("QueueFlushSettings"));
 ```
 
 ### Receiving and processing messages
@@ -496,6 +530,11 @@ class Program
 }
 ```
 
+#### Quorum queues at cluster environment
+Started from v5.1.0 you can set option `"UseQuorumQueues": true` at root configuration level 
+and `"UseQuorum": true` at queue configuration level. This option adds argument `"x-queue-type": "quorum"` on queue declaration
+and can be used at the configured cluster environment.
+
 ### Configuration with file
 
 Configuration can be done either through options or through configuration from appsettings.json.
@@ -515,6 +554,7 @@ In version 4.0 of the library, the old (<= v3) queue auto-registration format is
   "Password": "password",
   "DefaultTtl": 5,
   "PrefetchCount": 1,
+  "UseQuorumQueues": false, // Introduced in v5.1.0
   "Queues": [
     {
       "Name": "my_queue1",
@@ -526,6 +566,7 @@ In version 4.0 of the library, the old (<= v3) queue auto-registration format is
       "Exclusive": false,
       "AutoDelete": false,
       "DeadLetterExchange": "test_dead_letter",
+      "UseQuorum": false, // Introduced in v5.1.0
       "Exchanges": [
         "direct_exchange"
       ],
@@ -543,6 +584,7 @@ In version 4.0 of the library, the old (<= v3) queue auto-registration format is
         "my-messaeg"
       ],
       "DeadLetterExchange": "test_dead_letter",
+      "UseQuorum": false, // Introduced in v5.1.0
       "Exchanges": [
         "direct_exchange"
       ],
@@ -613,6 +655,7 @@ As *default exchange* `Exchange` will be used.
   "HostName": "rabbit-1",
   "UserName": "user",
   "Password": "password",
+  "UseQuorum": false, // Introduced in v5.1.0
   "Queue": {
     "QueueName": "my_queue1",
     "RoutingKeys": ["event1", "my-messaeg"],

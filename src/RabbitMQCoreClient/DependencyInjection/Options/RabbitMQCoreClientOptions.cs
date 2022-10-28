@@ -64,5 +64,10 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
         /// Internal library call exception handler event.
         /// </summary>
         public EventHandler<CallbackExceptionEventArgs>? ConnectionCallbackExceptionHandler { get; set; }
+
+        /// <summary>
+        /// While creating queues use parameter "x-queue-type": "quorum" on the whole client.
+        /// </summary>
+        public bool UseQuorumQueues { get; set; } = false;
     }
 }

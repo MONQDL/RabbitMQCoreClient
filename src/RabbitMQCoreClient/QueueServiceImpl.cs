@@ -18,7 +18,7 @@ using static RabbitMQCoreClient.Configuration.AppConstants.RabbitMQHeaders;
 namespace RabbitMQCoreClient
 {
     /// <summary>
-    /// Implemenrations oof the <see cref="IQueueService" />.
+    /// Implementations of the <see cref="IQueueService" />.
     /// </summary>
     /// <seealso cref="RabbitMQCoreClient.IQueueService" />
     public sealed class QueueServiceImpl : IQueueService
@@ -35,7 +35,6 @@ namespace RabbitMQCoreClient
         /// Client Options.
         /// </summary>
         public RabbitMQCoreClientOptions Options { get; }
-
 
         /// <summary>
         /// RabbitMQ connection interface.
@@ -133,7 +132,7 @@ namespace RabbitMQCoreClient
         /// </summary>
         public void Cleanup()
         {
-            _log.LogDebug("Cleaning up old connection and channels.");
+            _log.LogInformation("Closing and cleaning up old connection and channels.");
             try
             {
                 if (_connection != null)
@@ -168,7 +167,7 @@ namespace RabbitMQCoreClient
         /// </summary>
         void Reconnect()
         {
-            _log.LogDebug("Reconnect requested");
+            _log.LogInformation("Reconnect requested");
             Cleanup();
 
             var mres = new ManualResetEventSlim(false); // state is initially false
@@ -180,7 +179,7 @@ namespace RabbitMQCoreClient
 
                 try
                 {
-                    _log.LogDebug($"Trying to connect with reconnect attempt {_reconnectAttemptsCount}");
+                    _log.LogInformation($"Trying to connect with reconnect attempt {_reconnectAttemptsCount}");
                     Connect();
                     _reconnectAttemptsCount = 0;
                     OnReconnected?.Invoke();

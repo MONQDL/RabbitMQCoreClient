@@ -9,131 +9,139 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+using RabbitMQCoreClient.BatchQueueSender;
+using Microsoft.Extensions.Hosting;
+using RabbitMQCoreClient.ConsoleClient;
+using RabbitMQCoreClient;
 
-namespace RabbitMQCoreClient.ConsoleClient
-{
-    class Program
+Console.OutputEncoding = Encoding.UTF8;
+
+using IHost host = new HostBuilder()
+    .ConfigureHostConfiguration(configHost =>
     {
-        static readonly AutoResetEvent _closing = new AutoResetEvent(false);
-
-        static async Task Main(string[] args)
+        configHost.AddCommandLine(args);
+        configHost.AddJsonFile($"appsettings.Development.json", optional: false);
+    })
+    .ConfigureServices((builder, services) =>
+    {
+        services.AddLogging();
+        services.AddSingleton(LoggerFactory.Create(x =>
         {
-            Console.OutputEncoding = Encoding.UTF8;
-            Console.CancelKeyPress += Exit;
+            x.SetMinimumLevel(LogLevel.Trace);
+            x.AddConsole();
+        }));
 
-            var config = new ConfigurationBuilder()
-                .AddJsonFile($"appsettings.Development.json", optional: false)
-                .Build();
-
-            var services = new ServiceCollection();
-            services.AddLogging();
-            services.AddSingleton(LoggerFactory.Create(x =>
+        // Just for sending messages.
+        services
+            .AddRabbitMQCoreClient(builder.Configuration.GetSection("RabbitMQ"))
+            .AddSystemTextJson(x =>
             {
-                x.SetMinimumLevel(LogLevel.Trace);
-                x.AddConsole();
-            }));
-            // Just for sending messages.
-            services
-                .AddRabbitMQCoreClient(config.GetSection("RabbitMQ"))
-                .AddSystemTextJson(x =>
+                x.PropertyNamingPolicy = null;
+            });
+
+        // For sending and consuming messages config with subscriptions.
+        services
+            .AddRabbitMQCoreClientConsumer(builder.Configuration.GetSection("RabbitMQ"))
+            .AddHandler<Handler>(new[] { "test_routing_key" }, new ConsumerHandlerOptions
+            {
+                RetryKey = "test_routing_key_retry",
+                CustomSerializer = new SystemTextJsonMessageSerializer(x =>
+                {
+                    x.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                    x.PropertyNameCaseInsensitive = false;
+                })
+            })
+            .AddHandler<Handler>(new[] { "test_routing_key_subscription" }, new ConsumerHandlerOptions
+            {
+                RetryKey = "test_routing_key_retry",
+                CustomSerializer = new SystemTextJsonMessageSerializer(x =>
                 {
                     x.PropertyNamingPolicy = null;
-                });
-
-            // For sending and consuming messages config with subscriptions.
-            services
-                .AddRabbitMQCoreClientConsumer(config.GetSection("RabbitMQ"))
-                .AddHandler<Handler>(new[] { "test_routing_key" }, new ConsumerHandlerOptions
-                {
-                    RetryKey = "test_routing_key_retry",
-                    CustomSerializer = new SystemTextJsonMessageSerializer(x =>
-                    {
-                        x.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                        x.PropertyNameCaseInsensitive = false;
-                    })
+                    x.PropertyNameCaseInsensitive = false;
                 })
-                .AddHandler<Handler>(new[] { "test_routing_key_subscription" }, new ConsumerHandlerOptions
-                {
-                    RetryKey = "test_routing_key_retry",
-                    CustomSerializer = new SystemTextJsonMessageSerializer(x =>
-                    {
-                        x.PropertyNamingPolicy = null;
-                        x.PropertyNameCaseInsensitive = false;
-                    })
-                });
+            });
 
-            // For sending and consuming messages full configuration.
-            //services
-            //    .AddRabbitMQCoreClient(config)
-            //    .AddExchange("sdsad")
-            //    .AddConsumer()
-            //    .AddHandler<Handler>(new[] { "test_routing_key" })
-            //    .AddQueue("asdasdad")
-            //    .AddSubscription();
+        services.AddBatchQueueSender(x => x.EventsFlushPeriodSec = 5);
 
-            var serviceProvider = services.BuildServiceProvider();
+        // For sending and consuming messages full configuration.
+        //services
+        //    .AddRabbitMQCoreClient(config)
+        //    .AddExchange("sdsad")
+        //    .AddConsumer()
+        //    .AddHandler<Handler>(new[] { "test_routing_key" })
+        //    .AddQueue("asdasdad")
+        //    .AddSubscription();
+    })
+    .UseConsoleLifetime()
+    .Build();
 
-            var queueService = serviceProvider.GetRequiredService<IQueueService>();
-            var consumer = serviceProvider.GetRequiredService<IQueueConsumer>();
-            consumer.Start();
+var serviceProvider = host.Services;
 
-            //var body = new SimpleObj { Name = "test sending" };
-            //await queueService.SendAsync(body, "test_routing_key");
-            //await queueService.SendAsync(body, "test_routing_key");
+var queueService = serviceProvider.GetRequiredService<IQueueService>();
+var consumer = serviceProvider.GetRequiredService<IQueueConsumer>();
+var batchSender = serviceProvider.GetRequiredService<IQueueEventsBufferEngine>();
+consumer.Start();
 
-            // Send a batch of messages parallel.
-            //await Task.WhenAll(
-            //    Enumerable.Range(0, 1000)
-            //    .Select(i =>
-            //    {
-            //        try
-            //        {
-            //            Task.Delay(3000);
-            //            var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
-            //            return queueService.SendBatchAsync(bodyList, "test_routing_key", jsonSerializerSettings: new Newtonsoft.Json.JsonSerializerSettings()).AsTask();
-            //        }
-            //        catch (Exception e)
-            //        {
-            //            Console.Error.WriteLine("Ошибка отправки сообщения " + e.Message);
-            //            return Task.CompletedTask;
-            //        }
-            //    }));
-            CancellationTokenSource source = new CancellationTokenSource();
-            var longRunningTask = CreateSender(queueService, source.Token);
+//var body = new SimpleObj { Name = "test sending" };
+//await queueService.SendAsync(body, "test_routing_key");
+//await queueService.SendAsync(body, "test_routing_key");
 
-            //var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
-            //await queueService.SendBatchAsync(bodyList, "test_routing_key", jsonSerializerSettings: new Newtonsoft.Json.JsonSerializerSettings()).AsTask();
+// Send a batch of messages parallel.
+//await Task.WhenAll(
+//    Enumerable.Range(0, 1000)
+//    .Select(i =>
+//    {
+//        try
+//        {
+//            Task.Delay(3000);
+//            var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
+//            return queueService.SendBatchAsync(bodyList, "test_routing_key", jsonSerializerSettings: new Newtonsoft.Json.JsonSerializerSettings()).AsTask();
+//        }
+//        catch (Exception e)
+//        {
+//            Console.Error.WriteLine("Ошибка отправки сообщения " + e.Message);
+//            return Task.CompletedTask;
+//        }
+//    }));
+CancellationTokenSource source = new CancellationTokenSource();
+await CreateBatchSender(batchSender, source.Token);
 
-            Console.WriteLine("Waiting");
-            _closing.WaitOne();
-            //await longRunningTask;
-            Environment.Exit(0);
-        }
+//var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
+//await queueService.SendBatchAsync(bodyList, "test_routing_key", jsonSerializerSettings: new Newtonsoft.Json.JsonSerializerSettings()).AsTask();
 
-        static async Task CreateSender(IQueueService queueService, CancellationToken token)
+await host.RunAsync();
+
+static async Task CreateSender(IQueueService queueService, CancellationToken token)
+{
+    while (!token.IsCancellationRequested)
+    {
+        try
         {
-            while (true)
-            {
-                if (token.IsCancellationRequested)
-                    return;
-                try
-                {
-                    await Task.Delay(3000, token);
-                    var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
-                    await queueService.SendBatchAsync(bodyList, "test_routing_key_subscription").AsTask();
-                }
-                catch (Exception e)
-                {
-                    Console.Error.WriteLine("Error during message send " + e.Message);
-                }
-            }
+            await Task.Delay(3000, token);
+            var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
+            await queueService.SendBatchAsync(bodyList, "test_routing_key_subscription");
         }
-
-        protected static void Exit(object sender, ConsoleCancelEventArgs args)
+        catch (Exception e)
         {
-            args.Cancel = true;
-            Console.WriteLine("Exit");
-            _closing.Set();
+            Console.Error.WriteLine("Error during message send " + e.Message);
+        }
+    }
+}
+
+static async Task CreateBatchSender(IQueueEventsBufferEngine batchSender, CancellationToken token)
+{
+    while (!token.IsCancellationRequested)
+    {
+        try
+        {
+            await Task.Delay(500, token);
+            var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
+            await batchSender.AddEvent(bodyList, "test_routing_key_subscription");
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine("Error during message send " + e.Message);
         }
     }
 }

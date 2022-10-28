@@ -15,6 +15,11 @@ namespace RabbitMQCoreClient.DependencyInjection.ConfigModels
         public string? DeadLetterExchange { get; set; }
 
         /// <summary>
+        /// While creating the queue use parameter "x-queue-type": "quorum".
+        /// </summary>
+        public bool UseQuorum { get; set; } = false;
+
+        /// <summary>
         /// List of additional parameters that will be used when initializing the queue.
         /// </summary>
         public IDictionary<string, object> Arguments { get; set; } = new Dictionary<string, object>();

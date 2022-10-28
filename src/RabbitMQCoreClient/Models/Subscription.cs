@@ -9,8 +9,8 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
     /// </summary>
     public sealed class Subscription : QueueBase
     {
-        public Subscription()
-            : base(null, false, true, true)
+        public Subscription(bool useQuorum = false)
+            : base(null, false, true, true, useQuorum)
         { }
 
         public static Subscription Create(SubscriptionConfig queueConfig)
@@ -19,6 +19,7 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
             {
                 Arguments = queueConfig.Arguments ?? new Dictionary<string, object>(),
                 DeadLetterExchange = queueConfig.DeadLetterExchange,
+                UseQuorum = queueConfig.UseQuorum,
                 Exchanges = queueConfig.Exchanges ?? new HashSet<string>(),
                 RoutingKeys = queueConfig.RoutingKeys ?? new HashSet<string>()
             };
