@@ -127,7 +127,7 @@ var bodyList = Enumerable.Range(1, 10).Select(x => new SimpleObj { Name = $"test
 await queueService.SendBatchAsync(bodyList, "test_routing_key");
 ```
 
-#### Buffered sending batch messages
+#### Buffer messages in memory and send them at separate thread
 From the version v5.1.0 there was introduced a new mechanic of the sending messages using separate thread. 
 You can use this feature when you have to send many parallel small messages to the queue (for example from the ASP.NET requests).
 The feature allows you to buffer that messages at the inmemory list and flush them at once using the `SendBatchAsync` method.
@@ -153,7 +153,7 @@ You can configure the flush options by Action or IConfiguration. Example of the 
 {
   "QueueFlushSettings": {
     "EventsFlushPeriodSec": 2,
-    "EventsFlushCount: 500
+    "EventsFlushCount": 500
   }
 }
 ```
