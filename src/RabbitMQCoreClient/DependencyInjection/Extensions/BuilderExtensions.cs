@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.DependencyInjection
             if (queue is null)
                 throw new ArgumentNullException(nameof(queue), $"{nameof(queue)} is null.");
 
-            if (builder.Queues.Any(x => x.GetType() == typeof(Queue) && x.Name == queue.Name))
+            if (builder.Queues.Any(x => (x is Queue) && x.Name == queue.Name))
                 throw new ArgumentException("The queue with same name was added earlier.");
 
             builder.Queues.Add(queue);

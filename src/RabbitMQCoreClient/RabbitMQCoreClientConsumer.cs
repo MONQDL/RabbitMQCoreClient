@@ -106,6 +106,9 @@ namespace RabbitMQCoreClient
 
             foreach (var queue in _builder.Queues)
             {
+                // Set queue parameters from main configuration.
+                if (_queueService.Options.UseQuorumQueues)
+                    queue.UseQuorum = true;
                 queue.StartQueue(ConsumeChannel, _consumer);
             }
             _log.LogInformation($"Consumer connected to {_builder.Queues.Count} queues.");

@@ -9,8 +9,8 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
     /// </summary>
     public sealed class Queue : QueueBase
     {
-        public Queue(string name, bool durable = true, bool exclusive = false, bool autoDelete = false)
-            : base(name, durable, exclusive, autoDelete)
+        public Queue(string name, bool durable = true, bool exclusive = false, bool autoDelete = false, bool useQuorum = false)
+            : base(name, durable, exclusive, autoDelete, useQuorum)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException($"{nameof(name)} is null or empty.", nameof(name));
@@ -21,10 +21,12 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
             return new Queue(name: queueConfig.Name,
                        durable: queueConfig.Durable,
                        exclusive: queueConfig.Exclusive,
-                       autoDelete: queueConfig.AutoDelete)
+                       autoDelete: queueConfig.AutoDelete,
+                       useQuorum: queueConfig.UseQuorum)
             {
                 Arguments = queueConfig.Arguments ?? new Dictionary<string, object>(),
                 DeadLetterExchange = queueConfig.DeadLetterExchange,
+                UseQuorum = queueConfig.UseQuorum,
                 Exchanges = queueConfig.Exchanges ?? new HashSet<string>(),
                 RoutingKeys = queueConfig.RoutingKeys ?? new HashSet<string>()
             };
