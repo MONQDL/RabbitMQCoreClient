@@ -143,7 +143,7 @@ public class ExchangeDeclareTests
 
         var firstQueue = consumerBuilder.Queues.First();
 
-        Assert.True(Guid.TryParse(firstQueue.Name, out var _));
+        Assert.StartsWith("sub", firstQueue.Name);
         Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
         Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
         Assert.True(firstQueue.AutoDelete);
@@ -183,7 +183,7 @@ public class ExchangeDeclareTests
 
         var firstQueue = consumerBuilder.Queues.First();
 
-        Assert.True(Guid.TryParse(firstQueue.Name, out var _));
+        Assert.StartsWith("sub", firstQueue.Name);
         Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
         Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
         Assert.True(firstQueue.AutoDelete);
