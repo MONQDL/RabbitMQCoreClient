@@ -13,7 +13,7 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
     {
         protected QueueBase(string? name, bool durable, bool exclusive, bool autoDelete, bool useQuorum)
         {
-            Name = name;
+            Name = name ?? Guid.NewGuid().ToString();
             Durable = durable;
             Exclusive = exclusive;
             AutoDelete = autoDelete;
