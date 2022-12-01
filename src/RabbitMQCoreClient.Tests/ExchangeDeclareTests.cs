@@ -2,192 +2,192 @@
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-namespace RabbitMQCoreClient.Tests
+namespace RabbitMQCoreClient.Tests;
+
+public class ExchangeDeclareTests
 {
-    public class ExchangeDeclareTests
+    [Fact(DisplayName = "Checking the correct binding of options when setting up a queue v1.")]
+    public void ShouldProperlyBindQueueByOptionsV1()
     {
-        [Fact(DisplayName = "Проверка правильности привязки опций при настройке очереди v1.")]
-        public void ShouldProperlyBindQueueByOptionsV1()
+        var services = new ServiceCollection();
+        var builder = new RabbitMQCoreClientBuilder(services);
+        var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
+        var exchange = new Exchange(new ExchangeOptions { Name = "test" });
+        const string queueName = "queue1";
+        const string deadLetterExchange = "testdeadletter";
+
+        var options = new Queue(queueName, exclusive: true, durable: false)
         {
-            var services = new ServiceCollection();
-            var builder = new RabbitMQCoreClientBuilder(services);
-            var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
-            var exchange = new Exchange(new ExchangeOptions { Name = "test" });
-            const string queueName = "queue1";
-            const string deadLetterExchange = "testdeadletter";
+            RoutingKeys = { "r1", "r2" },
+            DeadLetterExchange = deadLetterExchange,
+            Exchanges = { exchange.Name }
+        };
 
-            var options = new Queue(queueName, exclusive: true, durable: false)
-            {
-                RoutingKeys = { "r1", "r2" },
-                DeadLetterExchange = deadLetterExchange,
-                Exchanges = { exchange.Name }
-            };
+        Assert.Empty(consumerBuilder.Queues);
+        consumerBuilder.AddQueue(options);
 
-            Assert.Empty(consumerBuilder.Queues);
-            consumerBuilder.AddQueue(options);
+        Assert.Single(consumerBuilder.Queues);
 
-            Assert.Single(consumerBuilder.Queues);
+        var firstQueue = consumerBuilder.Queues.First();
 
-            var firstQueue = consumerBuilder.Queues.First();
+        Assert.Equal(queueName, firstQueue.Name);
+        Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
+        Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
+        Assert.False(firstQueue.Durable);
+        Assert.True(firstQueue.Exclusive);
+    }
 
-            Assert.Equal(queueName, firstQueue.Name);
-            Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
-            Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
-            Assert.False(firstQueue.Durable);
-            Assert.True(firstQueue.Exclusive);
-        }
+    [Fact(DisplayName = "Checking the correct binding of options through the configuration when setting up the queue v1.")]
+    public void ShouldProperlyBindQueueByConfigurationV1()
+    {
+        var services = new ServiceCollection();
+        var builder = new RabbitMQCoreClientBuilder(services);
+        var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
+        const string queueName = "queue1";
+        const string deadLetterExchange = "testdeadletter";
 
-        [Fact(DisplayName = "Проверка правильности привязки опций через конфигурацию при настройке очереди v1.")]
-        public void ShouldProperlyBindQueueByConfigurationV1()
+        var configurationBuilder = new ConfigurationBuilder();
+
+        var optionsCollection = new List<KeyValuePair<string, string>>
         {
-            var services = new ServiceCollection();
-            var builder = new RabbitMQCoreClientBuilder(services);
-            var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
-            const string queueName = "queue1";
-            const string deadLetterExchange = "testdeadletter";
+            new KeyValuePair<string, string>("Queue:QueueName", queueName),
+            new KeyValuePair<string, string>("Queue:RoutingKeys:1", "r1"),
+            new KeyValuePair<string, string>("Queue:RoutingKeys:2", "r2"),
+            new KeyValuePair<string, string>("Queue:DeadLetterExchange", deadLetterExchange),
+            new KeyValuePair<string, string>("Queue:AutoDelete", "true"),
+            new KeyValuePair<string, string>("Queue:Durable", "false"),
+            new KeyValuePair<string, string>("Queue:Exclusive", "true")
+        };
 
-            var configurationBuilder = new ConfigurationBuilder();
+        configurationBuilder.AddInMemoryCollection(optionsCollection);
 
-            var optionsCollection = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("Queue:QueueName", queueName),
-                new KeyValuePair<string, string>("Queue:RoutingKeys:1", "r1"),
-                new KeyValuePair<string, string>("Queue:RoutingKeys:2", "r2"),
-                new KeyValuePair<string, string>("Queue:DeadLetterExchange", deadLetterExchange),
-                new KeyValuePair<string, string>("Queue:AutoDelete", "true"),
-                new KeyValuePair<string, string>("Queue:Durable", "false"),
-                new KeyValuePair<string, string>("Queue:Exclusive", "true")
-            };
+        var configuration = configurationBuilder.Build();
 
-            configurationBuilder.AddInMemoryCollection(optionsCollection);
+        Assert.Empty(consumerBuilder.Queues);
+        consumerBuilder.AddQueue(configuration.GetSection("Queue"));
 
-            var configuration = configurationBuilder.Build();
+        Assert.Single(consumerBuilder.Queues);
 
-            Assert.Empty(consumerBuilder.Queues);
-            consumerBuilder.AddQueue(configuration.GetSection("Queue"));
+        var firstQueue = consumerBuilder.Queues.First();
 
-            Assert.Single(consumerBuilder.Queues);
+        Assert.Equal(queueName, firstQueue.Name);
+        Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
+        Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
+        Assert.False(firstQueue.Durable);
+        Assert.True(firstQueue.Exclusive);
+    }
 
-            var firstQueue = consumerBuilder.Queues.First();
+    [Fact(DisplayName = "Checking the correct binding of options through the reduced configuration when configuring the queue v1.")]
+    public void ShouldProperlyBindQueueByShortConfigurationV1()
+    {
+        var services = new ServiceCollection();
+        var builder = new RabbitMQCoreClientBuilder(services);
+        var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
+        const string queueName = "queue1";
+        const string deadLetterExchange = "testdeadletter";
 
-            Assert.Equal(queueName, firstQueue.Name);
-            Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
-            Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
-            Assert.False(firstQueue.Durable);
-            Assert.True(firstQueue.Exclusive);
-        }
+        var configurationBuilder = new ConfigurationBuilder();
 
-        [Fact(DisplayName = "Проверка правильности привязки опций через сокращенную конфигурацию при настройке очереди v1.")]
-        public void ShouldProperlyBindQueueByShortConfigurationV1()
+        var optionsCollection = new List<KeyValuePair<string, string>>
         {
-            var services = new ServiceCollection();
-            var builder = new RabbitMQCoreClientBuilder(services);
-            var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
-            const string queueName = "queue1";
-            const string deadLetterExchange = "testdeadletter";
+            new KeyValuePair<string, string>("Queue:QueueName", queueName),
+            new KeyValuePair<string, string>("Queue:RoutingKeys:1", "r1"),
+            new KeyValuePair<string, string>("Queue:RoutingKeys:2", "r2"),
+            new KeyValuePair<string, string>("Queue:DeadLetterExchange", deadLetterExchange),
+        };
 
-            var configurationBuilder = new ConfigurationBuilder();
+        configurationBuilder.AddInMemoryCollection(optionsCollection);
 
-            var optionsCollection = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("Queue:QueueName", queueName),
-                new KeyValuePair<string, string>("Queue:RoutingKeys:1", "r1"),
-                new KeyValuePair<string, string>("Queue:RoutingKeys:2", "r2"),
-                new KeyValuePair<string, string>("Queue:DeadLetterExchange", deadLetterExchange),
-            };
+        var configuration = configurationBuilder.Build();
 
-            configurationBuilder.AddInMemoryCollection(optionsCollection);
+        Assert.Empty(consumerBuilder.Queues);
+        consumerBuilder.AddQueue(configuration.GetSection("Queue"));
 
-            var configuration = configurationBuilder.Build();
+        Assert.Single(consumerBuilder.Queues);
 
-            Assert.Empty(consumerBuilder.Queues);
-            consumerBuilder.AddQueue(configuration.GetSection("Queue"));
+        var firstQueue = consumerBuilder.Queues.First();
 
-            Assert.Single(consumerBuilder.Queues);
+        Assert.Equal(queueName, firstQueue.Name);
+        Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
+        Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
+        Assert.True(firstQueue.Durable);
+        Assert.False(firstQueue.Exclusive);
+        Assert.False(firstQueue.AutoDelete);
+    }
 
-            var firstQueue = consumerBuilder.Queues.First();
+    [Fact(DisplayName = "Checking the correct binding of options when setting up a subscription v1.")]
+    public void ShouldProperlyBindSubscriptionByOptionsV1()
+    {
+        var services = new ServiceCollection();
+        var builder = new RabbitMQCoreClientBuilder(services);
+        var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
+        var exchange = new Exchange(new ExchangeOptions { Name = "test" });
+        const string deadLetterExchange = "testdeadletter";
 
-            Assert.Equal(queueName, firstQueue.Name);
-            Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
-            Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
-            Assert.True(firstQueue.Durable);
-            Assert.False(firstQueue.Exclusive);
-            Assert.False(firstQueue.AutoDelete);
-        }
-
-        [Fact(DisplayName = "Проверка правильности привязки опций при настройке подписки v1.")]
-        public void ShouldProperlyBindSubscriptionByOptionsV1()
+        var options = new Subscription()
         {
-            var services = new ServiceCollection();
-            var builder = new RabbitMQCoreClientBuilder(services);
-            var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
-            var exchange = new Exchange(new ExchangeOptions { Name = "test" });
-            const string deadLetterExchange = "testdeadletter";
+            RoutingKeys = { "r1", "r2" },
+            DeadLetterExchange = deadLetterExchange,
+            Exchanges = { exchange.Name }
+        };
 
-            var options = new Subscription()
-            {
-                RoutingKeys = { "r1", "r2" },
-                DeadLetterExchange = deadLetterExchange,
-                Exchanges = { exchange.Name }
-            };
+        Assert.Empty(consumerBuilder.Queues);
+        consumerBuilder.AddSubscription(options);
 
-            Assert.Empty(consumerBuilder.Queues);
-            consumerBuilder.AddSubscription(options);
+        Assert.Single(consumerBuilder.Queues);
 
-            Assert.Single(consumerBuilder.Queues);
+        var firstQueue = consumerBuilder.Queues.First();
 
-            var firstQueue = consumerBuilder.Queues.First();
+        Assert.StartsWith("sub", firstQueue.Name);
+        Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
+        Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
+        Assert.True(firstQueue.AutoDelete);
+        Assert.False(firstQueue.Durable);
+        Assert.True(firstQueue.Exclusive);
+    }
 
-            Assert.Null(firstQueue.Name);
-            Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
-            Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
-            Assert.True(firstQueue.AutoDelete);
-            Assert.False(firstQueue.Durable);
-            Assert.True(firstQueue.Exclusive);
-        }
+    [Fact(DisplayName = "Checking the correct binding of options through the configuration when setting up a subscription v1.")]
+    public void ShouldProperlyBindSubscriptionByConfigurationV1()
+    {
+        var services = new ServiceCollection();
+        var builder = new RabbitMQCoreClientBuilder(services);
+        var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
+        const string deadLetterExchange = "testdeadletter";
 
-        [Fact(DisplayName = "Проверка правильности привязки опций через конфигурацию при настройке подписки v1.")]
-        public void ShouldProperlyBindSubscriptionByConfigurationV1()
+        var configurationBuilder = new ConfigurationBuilder();
+
+        var optionsCollection = new List<KeyValuePair<string, string>>
         {
-            var services = new ServiceCollection();
-            var builder = new RabbitMQCoreClientBuilder(services);
-            var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
-            const string deadLetterExchange = "testdeadletter";
+            new KeyValuePair<string, string>("Subscription:RoutingKeys:1", "r1"),
+            new KeyValuePair<string, string>("Subscription:RoutingKeys:2", "r2"),
+            new KeyValuePair<string, string>("Subscription:DeadLetterExchange", deadLetterExchange),
+            // Verify that the configuration does not change the default options for the subscription.
+            new KeyValuePair<string, string>("Subscription:AutoDelete", "false"),
+            new KeyValuePair<string, string>("Subscription:Durable", "true"),
+            new KeyValuePair<string, string>("Subscription:Exclusive", "false")
+        };
 
-            var configurationBuilder = new ConfigurationBuilder();
+        configurationBuilder.AddInMemoryCollection(optionsCollection);
 
-            var optionsCollection = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("Subscription:RoutingKeys:1", "r1"),
-                new KeyValuePair<string, string>("Subscription:RoutingKeys:2", "r2"),
-                new KeyValuePair<string, string>("Subscription:DeadLetterExchange", deadLetterExchange),
-                // Проверяем, что конфигурация не меняет опций по умолчанию для подписки.
-                new KeyValuePair<string, string>("Subscription:AutoDelete", "false"),
-                new KeyValuePair<string, string>("Subscription:Durable", "true"),
-                new KeyValuePair<string, string>("Subscription:Exclusive", "false")
-            };
+        var configuration = configurationBuilder.Build();
 
-            configurationBuilder.AddInMemoryCollection(optionsCollection);
+        Assert.Empty(consumerBuilder.Queues);
+        consumerBuilder.AddSubscription(configuration.GetSection("Subscription"));
 
-            var configuration = configurationBuilder.Build();
+        Assert.Single(consumerBuilder.Queues);
 
-            Assert.Empty(consumerBuilder.Queues);
-            consumerBuilder.AddSubscription(configuration.GetSection("Subscription"));
+        var firstQueue = consumerBuilder.Queues.First();
 
-            Assert.Single(consumerBuilder.Queues);
-
-            var firstQueue = consumerBuilder.Queues.First();
-
-            Assert.Null(firstQueue.Name);
-            Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
-            Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
-            Assert.True(firstQueue.AutoDelete);
-            Assert.False(firstQueue.Durable);
-            Assert.True(firstQueue.Exclusive);
-        }
+        Assert.StartsWith("sub", firstQueue.Name);
+        Assert.Equal(new HashSet<string> { "r1", "r2" }, firstQueue.RoutingKeys);
+        Assert.Equal(deadLetterExchange, firstQueue.DeadLetterExchange);
+        Assert.True(firstQueue.AutoDelete);
+        Assert.False(firstQueue.Durable);
+        Assert.True(firstQueue.Exclusive);
     }
 }

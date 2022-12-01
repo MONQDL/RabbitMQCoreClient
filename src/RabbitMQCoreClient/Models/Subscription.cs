@@ -1,4 +1,5 @@
 ﻿using RabbitMQCoreClient.DependencyInjection.ConfigModels;
+using System;
 using System.Collections.Generic;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
@@ -10,7 +11,7 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
     public sealed class Subscription : QueueBase
     {
         public Subscription(bool useQuorum = false)
-            : base(null, false, true, true, useQuorum)
+            : base($"sub_{Guid.NewGuid().ToString()}", false, true, true, useQuorum)
         { }
 
         public static Subscription Create(SubscriptionConfig queueConfig)

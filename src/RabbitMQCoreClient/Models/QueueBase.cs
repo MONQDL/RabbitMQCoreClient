@@ -79,10 +79,13 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
             if (UseQuorum && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.QueueTypeHeader))
                 Arguments.Add(AppConstants.RabbitMQHeaders.QueueTypeHeader, "quorum");
 
+            if (UseQuorum && AutoDelete && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.QueueExpiresHeader))
+                Arguments.Add(AppConstants.RabbitMQHeaders.QueueExpiresHeader, 10000);
+
             var declaredQueue = channel.QueueDeclare(queue: Name ?? string.Empty,
-                    durable: Durable,
-                    exclusive: Exclusive,
-                    autoDelete: AutoDelete,
+                    durable: UseQuorum || Durable,
+                    exclusive: !UseQuorum && Exclusive,
+                    autoDelete: !UseQuorum && AutoDelete,
                     arguments: Arguments);
 
             if (declaredQueue is null)

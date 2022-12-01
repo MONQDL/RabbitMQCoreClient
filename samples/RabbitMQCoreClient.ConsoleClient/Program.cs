@@ -1,7 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using RabbitMQCoreClient;
+using RabbitMQCoreClient.BatchQueueSender;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.ConsoleClient;
 using RabbitMQCoreClient.Serializers;
 using System;
 using System.Linq;
@@ -9,11 +13,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
-using RabbitMQCoreClient.BatchQueueSender;
-using Microsoft.Extensions.Hosting;
-using RabbitMQCoreClient.ConsoleClient;
-using RabbitMQCoreClient;
 
 Console.OutputEncoding = Encoding.UTF8;
 
@@ -62,8 +61,6 @@ using IHost host = new HostBuilder()
                 })
             });
 
-        services.AddBatchQueueSender(x => x.EventsFlushPeriodSec = 5);
-
         // For sending and consuming messages full configuration.
         //services
         //    .AddRabbitMQCoreClient(config)
@@ -80,7 +77,7 @@ var serviceProvider = host.Services;
 
 var queueService = serviceProvider.GetRequiredService<IQueueService>();
 var consumer = serviceProvider.GetRequiredService<IQueueConsumer>();
-var batchSender = serviceProvider.GetRequiredService<IQueueEventsBufferEngine>();
+//var batchSender = serviceProvider.GetRequiredService<IQueueEventsBufferEngine>();
 consumer.Start();
 
 //var body = new SimpleObj { Name = "test sending" };
@@ -89,12 +86,11 @@ consumer.Start();
 
 // Send a batch of messages parallel.
 //await Task.WhenAll(
-//    Enumerable.Range(0, 1000)
+//    Enumerable.Range(0, 100)
 //    .Select(i =>
 //    {
 //        try
 //        {
-//            Task.Delay(3000);
 //            var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
 //            return queueService.SendBatchAsync(bodyList, "test_routing_key", jsonSerializerSettings: new Newtonsoft.Json.JsonSerializerSettings()).AsTask();
 //        }
@@ -105,7 +101,8 @@ consumer.Start();
 //        }
 //    }));
 CancellationTokenSource source = new CancellationTokenSource();
-await CreateBatchSender(batchSender, source.Token);
+await CreateSender(queueService, source.Token);
+//await CreateBatchSender(batchSender, source.Token);
 
 //var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
 //await queueService.SendBatchAsync(bodyList, "test_routing_key", jsonSerializerSettings: new Newtonsoft.Json.JsonSerializerSettings()).AsTask();
