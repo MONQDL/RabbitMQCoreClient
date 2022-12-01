@@ -10,6 +10,7 @@ namespace RabbitMQCoreClient.Configuration
             public const string TtlHeader = "x-message-ttl";
             public const string DeadLetterExchangeHeader = "x-dead-letter-exchange";
             public const string QueueTypeHeader = "x-queue-type";
+            public const string QueueExpiresHeader = "x-expires";
         }
     }
 }

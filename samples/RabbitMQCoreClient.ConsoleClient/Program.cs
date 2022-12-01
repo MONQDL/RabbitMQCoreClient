@@ -1,7 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using RabbitMQCoreClient;
+using RabbitMQCoreClient.BatchQueueSender;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.ConsoleClient;
 using RabbitMQCoreClient.Serializers;
 using System;
 using System.Linq;
@@ -9,11 +13,6 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
-using RabbitMQCoreClient.BatchQueueSender;
-using Microsoft.Extensions.Hosting;
-using RabbitMQCoreClient.ConsoleClient;
-using RabbitMQCoreClient;
 
 Console.OutputEncoding = Encoding.UTF8;
 
@@ -102,7 +101,7 @@ consumer.Start();
 //        }
 //    }));
 CancellationTokenSource source = new CancellationTokenSource();
-//await CreateSender(queueService, source.Token);
+await CreateSender(queueService, source.Token);
 //await CreateBatchSender(batchSender, source.Token);
 
 //var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
