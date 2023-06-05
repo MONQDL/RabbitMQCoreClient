@@ -594,13 +594,13 @@ Set to true to check peer certificate for revocation.
   "DefaultTtl": 5,
   "PrefetchCount": 1,
   "UseQuorumQueues": false, // Introduced in v5.1.0
-  "SslEnabled": true, // Introduced in v5.2.0
-  "SslAcceptablePolicyErrors": "None", // Introduced in v5.2.0
-  "SslVersion": "None", // Introduced in v5.2.0
-  "SslServerName": "serverName", // Introduced in v5.2.0
-  "SslCheckCertificateRevocation": false, // Introduced in v5.2.0
-  "SslCertPassphrase": "pass", // Introduced in v5.2.0
-  "SslCertPath": "/certs", // Introduced in v5.2.0
+  "SslEnabled": true, // Introduced in v5.3.0
+  "SslAcceptablePolicyErrors": "None", // Introduced in v5.3.0
+  "SslVersion": "None", // Introduced in v5.3.0
+  "SslServerName": "serverName", // Introduced in v5.3.0
+  "SslCheckCertificateRevocation": false, // Introduced in v5.3.0
+  "SslCertPassphrase": "pass", // Introduced in v5.3.0
+  "SslCertPath": "/certs", // Introduced in v5.3.0
   "Queues": [
     {
       "Name": "my_queue1",
