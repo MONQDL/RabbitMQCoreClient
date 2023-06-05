@@ -10,6 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -102,8 +104,22 @@ namespace RabbitMQCoreClient
                 TopologyRecoveryEnabled = false,
                 Port = Options.Port,
                 VirtualHost = Options.VirtualHost,
-                DispatchConsumersAsync = true
+                DispatchConsumersAsync = true,
             };
+            if (Options.SslEnabled)
+            {
+                var ssl = new SslOption
+                {
+                    Enabled = true,
+                    AcceptablePolicyErrors = Options.SslAcceptablePolicyErrors,
+                    Version = Options.SslVersion,
+                    ServerName = Options.SslServerName ?? string.Empty,
+                    CheckCertificateRevocation = Options.SslCheckCertificateRevocation,
+                    CertPassphrase = Options.SslCertPassphrase ?? string.Empty,
+                    CertPath = Options.SslCertPath ?? string.Empty
+                };
+                factory.Ssl = ssl;
+            }
             _connection = factory.CreateConnection();
 
             _connection.ConnectionShutdown += Connection_ConnectionShutdown;
@@ -190,7 +206,10 @@ namespace RabbitMQCoreClient
                 {
                     _reconnectAttemptsCount++;
                     Thread.Sleep(Options.ReconnectionTimeout);
-                    _log.LogCritical(e, $"Connection failed. Detais: {e.Message}. Reconnect attempts: {_reconnectAttemptsCount}", e);
+                    string? innerExceptionMessage = null;
+                    if (e.InnerException != null)
+                        innerExceptionMessage = e.InnerException.Message;
+                    _log.LogCritical(e, $"Connection failed. Detais: {e.Message} {innerExceptionMessage}. Reconnect attempts: {_reconnectAttemptsCount}", e);
                 }
             }
         }
