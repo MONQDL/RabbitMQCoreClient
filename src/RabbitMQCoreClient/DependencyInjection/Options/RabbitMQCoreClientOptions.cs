@@ -1,5 +1,7 @@
 ﻿using RabbitMQ.Client.Events;
 using System;
+using System.Net.Security;
+using System.Security.Authentication;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 {
@@ -69,5 +71,55 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
         /// While creating queues use parameter "x-queue-type": "quorum" on the whole client.
         /// </summary>
         public bool UseQuorumQueues { get; set; } = false;
+
+        /// <summary>
+        /// Controls if TLS should indeed be used. Set to false to disable TLS
+        /// on the connection.
+        /// </summary>
+        public bool SslEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Retrieve or set the set of TLS policy (peer verification) errors that are deemed acceptable.
+        /// </summary>
+        public SslPolicyErrors SslAcceptablePolicyErrors { get; set; } = SslPolicyErrors.None;
+
+        /// <summary>
+        /// Retrieve or set the TLS protocol version.
+        /// The client will let the OS pick a suitable version by using <see cref="SslProtocols.None" />.
+        /// If this option is disabled, e.g.see via app context, the client will attempt to fall back
+        /// to TLSv1.2.
+        /// </summary>
+        /// <seealso cref="SslProtocols" />
+        /// <seealso href="https://www.rabbitmq.com/ssl.html#dotnet-client" />
+        /// <seealso href="https://docs.microsoft.com/en-us/dotnet/framework/network-programming/tls?view=netframework-4.6.2" />
+        /// <seealso href="https://docs.microsoft.com/en-us/dotnet/api/system.security.authentication.sslprotocols?view=netframework-4.8" />
+        public SslProtocols SslVersion { get; set; } = SslProtocols.None;
+
+        /// <summary>
+        /// Retrieve or set server's expected name.
+        /// This MUST match the Subject Alternative Name (SAN) or CN on the peer's (server's) leaf certificate,
+        /// otherwise the TLS connection will fail.
+        /// </summary>
+        public string? SslServerName { get; set; }
+
+        /// <summary>
+        /// Attempts to check certificate revocation status. Default is false.
+        /// Set to true to check peer certificate for revocation.
+        /// </summary>
+        /// <remarks>
+        /// Uses the built-in .NET TLS implementation machinery for checking a certificate against
+        /// certificate revocation lists.
+        /// </remarks>
+        public bool SslCheckCertificateRevocation { get; set; } = false;
+
+        /// <summary>
+        /// Retrieve or set the client certificate passphrase.
+        /// </summary>
+        public string? SslCertPassphrase { get; set; }
+
+        /// <summary>
+        /// Retrieve or set the path to client certificate.
+        /// </summary>
+        public string? SslCertPath { get; set; }
     }
 }

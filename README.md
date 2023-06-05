@@ -543,6 +543,45 @@ In version 4.0 of the library, the old (<= v3) queue auto-registration format is
 
 - Only one queue can be automatically registered. The queue is registered at the exchange point "Exchange".
 
+#### SSL support
+Started from v5.2.0 you can set options to configure SSL secured connection to the server. 
+To enable the SSL connection you must set `"SslEnabled": true` option at root configuration level.
+
+You can use ssl options to setup the SSL connection:
+
+- __SslAcceptablePolicyErrors__ [optional] - set of TLS policy (peer verification) 
+errors that are deemed acceptable. Default is `"None"`. Acceptable values:
+  - None - no SSL policy errors.
+  - RemoteCertificateNotAvailable - certificate not available.
+  - RemoteCertificateNameMismatch - certificate name mismatch.
+  - RemoteCertificateChainErrors - System.Security.Cryptography.X509Certificates.X509Chain.ChainStatus has returned a non empty array.
+- __SslVersion__ [optional] - the TLS protocol version. 
+The client will let the OS pick a suitable version by using value `"None"`.
+If this option is unavailable on somne environments or effectively disabled, 
+e.g.see via app context, the client will attempt to fall backto TLSv1.2. The default is `"None"`. Acceptable values:
+  - None - allows the operating system to choose the best protocol to use, and to block
+protocols that are not secure. Unless your app has a specific reason not to,
+you should use this field.
+  - Ssl2 - specifies the SSL 2.0 protocol. SSL 2.0 has been superseded by the TLS protocol
+and is provided for backward compatibility only.
+  - Ssl3 - specifies the SSL 3.0 protocol. SSL 3.0 has been superseded by the TLS protocol
+and is provided for backward compatibility only.
+  - Tls - specifies the TLS 1.0 security protocol. The TLS protocol is defined in IETF
+RFC 2246.
+  - Tls11 - specifies the TLS 1.1 security protocol. The TLS protocol is defined in IETF
+RFC 4346.
+  - Tls12 - specifies the TLS 1.2 security protocol. The TLS protocol is defined in IETF
+RFC 5246.
+  - Tls13 - specifies the TLS 1.3 security protocol. The TLS protocol is defined in IETF
+RFC 8446.
+- __SslServerName__ [optional] - server's expected name.
+This MUST match the Subject Alternative Name (SAN) or CN on the peer's (server's) leaf certificate,
+otherwise the TLS connection will fail. Default is `""`.
+- __SslCheckCertificateRevocation__ [optional] - attempts to check certificate revocation status. Default is `false`.
+Set to true to check peer certificate for revocation.
+- __SslCertPassphrase__ [optional] - the client certificate passphrase. Default is `""`.
+- __SslCertPath__ [optional] - the path to client certificate. Default is `""`.
+
 ##### Configuration format
 
 ###### Full configuration:
@@ -555,6 +594,13 @@ In version 4.0 of the library, the old (<= v3) queue auto-registration format is
   "DefaultTtl": 5,
   "PrefetchCount": 1,
   "UseQuorumQueues": false, // Introduced in v5.1.0
+  "SslEnabled": true, // Introduced in v5.3.0
+  "SslAcceptablePolicyErrors": "None", // Introduced in v5.3.0
+  "SslVersion": "None", // Introduced in v5.3.0
+  "SslServerName": "serverName", // Introduced in v5.3.0
+  "SslCheckCertificateRevocation": false, // Introduced in v5.3.0
+  "SslCertPassphrase": "pass", // Introduced in v5.3.0
+  "SslCertPath": "/certs", // Introduced in v5.3.0
   "Queues": [
     {
       "Name": "my_queue1",
