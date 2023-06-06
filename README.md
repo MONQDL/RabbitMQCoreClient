@@ -550,7 +550,9 @@ To enable the SSL connection you must set `"SslEnabled": true` option at root co
 You can use ssl options to setup the SSL connection:
 
 - __SslAcceptablePolicyErrors__ [optional] - set of TLS policy (peer verification) 
-errors that are deemed acceptable. Default is `"None"`. Acceptable values:
+errors that are deemed acceptable. Default is `"None"`. 
+You can supply multiple arguments separated by comma. For example: `"SslAcceptablePolicyErrors": "RemoteCertificateNotAvailable,RemoteCertificateNameMismatch"`.
+Acceptable values:
   - None - no SSL policy errors.
   - RemoteCertificateNotAvailable - certificate not available.
   - RemoteCertificateNameMismatch - certificate name mismatch.
@@ -558,7 +560,9 @@ errors that are deemed acceptable. Default is `"None"`. Acceptable values:
 - __SslVersion__ [optional] - the TLS protocol version. 
 The client will let the OS pick a suitable version by using value `"None"`.
 If this option is unavailable on somne environments or effectively disabled, 
-e.g.see via app context, the client will attempt to fall backto TLSv1.2. The default is `"None"`. Acceptable values:
+e.g.see via app context, the client will attempt to fall backto TLSv1.2. The default is `"None"`. 
+You can supply multiple arguments separated by comma. For example: `"SslVersion": "Ssl3,Tls13"`.
+Acceptable values:
   - None - allows the operating system to choose the best protocol to use, and to block
 protocols that are not secure. Unless your app has a specific reason not to,
 you should use this field.
