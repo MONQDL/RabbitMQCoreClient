@@ -2,9 +2,11 @@
 using System;
 using System.Net.Security;
 using System.Security.Authentication;
+using System.Text.Json.Serialization;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 {
+
     public class RabbitMQCoreClientOptions
     {
         /// <summary>
@@ -81,6 +83,7 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
         /// <summary>
         /// Retrieve or set the set of TLS policy (peer verification) errors that are deemed acceptable.
         /// </summary>
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public SslPolicyErrors SslAcceptablePolicyErrors { get; set; } = SslPolicyErrors.None;
 
         /// <summary>
@@ -93,6 +96,7 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
         /// <seealso href="https://www.rabbitmq.com/ssl.html#dotnet-client" />
         /// <seealso href="https://docs.microsoft.com/en-us/dotnet/framework/network-programming/tls?view=netframework-4.6.2" />
         /// <seealso href="https://docs.microsoft.com/en-us/dotnet/api/system.security.authentication.sslprotocols?view=netframework-4.8" />
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public SslProtocols SslVersion { get; set; } = SslProtocols.None;
 
         /// <summary>
