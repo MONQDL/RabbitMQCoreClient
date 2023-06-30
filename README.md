@@ -1,9 +1,9 @@
 ﻿# RabbitMQ Client library for .net core applications with Dependency Injection support
 
-Library Version: v5
+Library Version: v6
 
 The library allows you to quickly connect and get started with the RabbitMQ message broker.
-The library serializes and deserializes messages to JSON using _Newtonsoft.Json_ as default or _System.Text.Json_. 
+The library serializes and deserializes messages to JSON using _System.Text.Json_ as default or _Newtonsoft.Json_. 
 The library allows you to work with multiple queues, connected to various exchanges. It allows you to work with subscriptions.
 The library implements a custom errored messages mechanism, using the TTL and the dead message queue.
 
@@ -130,7 +130,7 @@ await queueService.SendBatchAsync(bodyList, "test_routing_key");
 #### Buffer messages in memory and send them at separate thread
 From the version v5.1.0 there was introduced a new mechanic of the sending messages using separate thread. 
 You can use this feature when you have to send many parallel small messages to the queue (for example from the ASP.NET requests).
-The feature allows you to buffer that messages at the inmemory list and flush them at once using the `SendBatchAsync` method.
+The feature allows you to buffer that messages at the in-memory list and flush them at once using the `SendBatchAsync` method.
 
 To use this feature register it at DI:
 
@@ -408,7 +408,7 @@ class Program
 }
 ```
 
-The default serializer is set to `Newtonsoft.Json` due to heavy code migrations in the existing code base that uses the library.
+The default serializer is set to `System.Text.Json` due to improved performance compared to `Newtonsoft.Json`.
 
 If you want to use different serializers for different message handlers that you can set CustomSerializer at the Handler configuration stage.
 
