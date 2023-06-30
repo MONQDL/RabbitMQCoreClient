@@ -34,10 +34,7 @@ using IHost host = new HostBuilder()
         // Just for sending messages.
         services
             .AddRabbitMQCoreClient(builder.Configuration.GetSection("RabbitMQ"))
-            .AddSystemTextJson(x =>
-            {
-                x.PropertyNamingPolicy = null;
-            });
+            .AddSystemTextJson(x => x.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
         // For sending and consuming messages config with subscriptions.
         services
@@ -53,12 +50,7 @@ using IHost host = new HostBuilder()
             })
             .AddHandler<Handler>(new[] { "test_routing_key_subscription" }, new ConsumerHandlerOptions
             {
-                RetryKey = "test_routing_key_retry",
-                CustomSerializer = new SystemTextJsonMessageSerializer(x =>
-                {
-                    x.PropertyNamingPolicy = null;
-                    x.PropertyNameCaseInsensitive = false;
-                })
+                RetryKey = "test_routing_key_retry"
             });
 
         // For sending and consuming messages full configuration.
@@ -115,9 +107,9 @@ static async Task CreateSender(IQueueService queueService, CancellationToken tok
     {
         try
         {
-            await Task.Delay(3000, token);
+            await Task.Delay(1000, token);
             var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
-            await queueService.SendBatchAsync(bodyList, "test_routing_key_subscription");
+            await queueService.SendBatchAsync(bodyList, "test_routing_key");
         }
         catch (Exception e)
         {

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
+using System.Text;
 
 namespace RabbitMQCoreClient.Serializers
 {
@@ -29,15 +31,17 @@ namespace RabbitMQCoreClient.Serializers
         }
 
         /// <inheritdoc />
-        public string Serialize<TValue>(TValue value)
+        public ReadOnlyMemory<byte> Serialize<TValue>(TValue value)
         {
-            return Newtonsoft.Json.JsonConvert.SerializeObject(value, Options);
+            var serializedValue = Newtonsoft.Json.JsonConvert.SerializeObject(value, Options);
+            return Encoding.UTF8.GetBytes(serializedValue);
         }
 
         /// <inheritdoc />
-        public TResult? Deserialize<TResult>(string value)
+        public TResult? Deserialize<TResult>(ReadOnlyMemory<byte> value)
         {
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<TResult>(value, Options);
+            var message = Encoding.UTF8.GetString(value.ToArray()) ?? string.Empty;
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<TResult>(message, Options);
         }
     }
 }

@@ -125,10 +125,7 @@ namespace RabbitMQCoreClient
                 ConsumerTag = @event.ConsumerTag
             };
 
-            var sourceMessageBody = @event.Body.ToArray();
-
-            string message = Encoding.UTF8.GetString(sourceMessageBody) ?? string.Empty;
-            _log.LogDebug("New message received with deliveryTag={deliveryTag}. message: {message}", @event.DeliveryTag, message);
+            _log.LogDebug("New message received with deliveryTag={deliveryTag}.", @event.DeliveryTag);
 
             // Send a message to the death queue if ttl is over.
             if (@event.BasicProperties.Headers?.ContainsKey(AppConstants.RabbitMQHeaders.TtlHeader) == true
@@ -163,7 +160,7 @@ namespace RabbitMQCoreClient
             _log.LogDebug($"Created scope for handler type {handler.GetType().Name}. Start processing message.");
             try
             {
-                await handler.HandleMessage(message, rabbitArgs);
+                await handler.HandleMessage(@event.Body, rabbitArgs);
                 ConsumeChannel.BasicAck(@event.DeliveryTag, false);
                 _log.LogDebug($"Message successfully processed by handler type {handler?.GetType().Name} " +
                               $"with deliveryTag={{deliveryTag}}.", @event.DeliveryTag);
@@ -187,7 +184,7 @@ namespace RabbitMQCoreClient
                         // The message is sent back to the queue using the `handlerOptions?.RetryKey` key,
                         // if specified, otherwise it is sent to the queue with the original key.
                         await _queueService.SendAsync(
-                            sourceMessageBody,
+                            @event.Body,
                             @event.BasicProperties,
                             exchange: @event.Exchange,
                             routingKey: !string.IsNullOrEmpty(handlerOptions?.RetryKey) ? handlerOptions.RetryKey : @event.RoutingKey,

@@ -4,40 +4,39 @@ using RabbitMQCoreClient.Serializers;
 using System;
 using System.Threading.Tasks;
 
-namespace RabbitMQCoreClient.WebApp
+namespace RabbitMQCoreClient.WebApp;
+
+public class Handler : MessageHandlerJson<SimpleObj>
 {
-    public class Handler : MessageHandlerJson<SimpleObj>
+    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args)
     {
-        protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args)
-        {
-            ProcessMessage(message);
+        ProcessMessage(message);
 
-            return Task.CompletedTask;
-        }
-
-        protected override ValueTask OnParseError(string json, Exception e, RabbitMessageEventArgs args) => base.OnParseError(json, e, args);
-
-        void ProcessMessage(SimpleObj obj) =>
-            //if (obj.Name != "my test name")
-            //{
-            //    ErrorMessageRouter.MoveToDeadLetter();
-            //    throw new ArgumentException("parser failed");
-            //}
-
-            Console.WriteLine("It's all ok.");
+        return Task.CompletedTask;
     }
 
-    public class RawHandler : IMessageHandler
-    {
-        public ErrorMessageRouting ErrorMessageRouter => new ErrorMessageRouting();
-        public ConsumerHandlerOptions Options { get; set; }
-        public IMessageSerializer Serializer { get; set; }
+    protected override ValueTask OnParseError(string json, Exception e, RabbitMessageEventArgs args) => base.OnParseError(json, e, args);
 
-        public Task HandleMessage(string message, RabbitMessageEventArgs args)
-        {
-            Console.WriteLine(message);
-            throw new Exception();
-            return Task.CompletedTask;
-        }
+    void ProcessMessage(SimpleObj obj) =>
+        //if (obj.Name != "my test name")
+        //{
+        //    ErrorMessageRouter.MoveToDeadLetter();
+        //    throw new ArgumentException("parser failed");
+        //}
+
+        Console.WriteLine("It's all ok.");
+}
+
+public class RawHandler : IMessageHandler
+{
+    public ErrorMessageRouting ErrorMessageRouter => new ErrorMessageRouting();
+    public ConsumerHandlerOptions Options { get; set; }
+    public IMessageSerializer Serializer { get; set; }
+
+    public Task HandleMessage(string message, RabbitMessageEventArgs args)
+    {
+        Console.WriteLine(message);
+        throw new Exception();
+        return Task.CompletedTask;
     }
 }

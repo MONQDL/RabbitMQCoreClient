@@ -1,7 +1,6 @@
-﻿namespace RabbitMQCoreClient.WebApp
+﻿namespace RabbitMQCoreClient.WebApp;
+
+public class SimpleObj
 {
-    public class SimpleObj
-    {
-        public string Name { get; set; }
-    }
+    public string Name { get; set; }
 }

@@ -10,8 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Net.Security;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -218,29 +216,6 @@ namespace RabbitMQCoreClient
         public void Dispose() => Cleanup();
 
         /// <inheritdoc />
-        public ValueTask SendAsync<T>(
-            T obj,
-            string routingKey,
-            string? exchange = default,
-            bool decreaseTtl = true,
-            string? correlationId = default
-            )
-        {
-            // Проверка на Null без боксинга. // https://stackoverflow.com/a/864860
-            if (EqualityComparer<T>.Default.Equals(obj, default))
-                throw new ArgumentNullException(nameof(obj));
-
-            var serializedObj = _serializer.Serialize(obj);
-            return SendJsonAsync(
-                        serializedObj,
-                        exchange: exchange,
-                        routingKey: routingKey,
-                        decreaseTtl: decreaseTtl,
-                        correlationId: correlationId
-                       );
-        }
-
-        /// <inheritdoc />
         public ValueTask SendJsonAsync(
             string json,
             string routingKey,
@@ -266,8 +241,73 @@ namespace RabbitMQCoreClient
         }
 
         /// <inheritdoc />
+        public ValueTask SendJsonAsync(
+            ReadOnlyMemory<byte> jsonBytes,
+            string routingKey,
+            string? exchange = default,
+            bool decreaseTtl = true,
+            string? correlationId = default)
+        {
+            if (jsonBytes.Length == 0)
+                throw new ArgumentException($"{nameof(jsonBytes)} is null or empty.", nameof(jsonBytes));
+
+            var properties = CreateBasicJsonProperties();
+
+            _log.LogDebug("Sending json message to exchange {exchange} with routing key {routingKey}.", exchange, routingKey);
+
+            return SendAsync(jsonBytes,
+                props: properties,
+                exchange: exchange,
+                routingKey: routingKey,
+                decreaseTtl: decreaseTtl,
+                correlationId: correlationId
+                );
+        }
+
+        /// <inheritdoc />
+        public ValueTask SendAsync<T>(
+            T obj,
+            string routingKey,
+            string? exchange = default,
+            bool decreaseTtl = true,
+            string? correlationId = default
+            )
+        {
+            // Проверка на Null без боксинга. // https://stackoverflow.com/a/864860
+            if (EqualityComparer<T>.Default.Equals(obj, default))
+                throw new ArgumentNullException(nameof(obj));
+
+            var serializedObj = _serializer.Serialize(obj);
+            return SendJsonAsync(
+                        serializedObj,
+                        exchange: exchange,
+                        routingKey: routingKey,
+                        decreaseTtl: decreaseTtl,
+                        correlationId: correlationId
+                       );
+        }
+
+        /// <inheritdoc />
         public async ValueTask SendAsync(
             byte[] obj,
+            IBasicProperties props,
+            string routingKey,
+            string? exchange = default,
+            bool decreaseTtl = true,
+            string? correlationId = default)
+        {
+            await SendAsync(new ReadOnlyMemory<byte>(obj),
+                props: props,
+                exchange: exchange,
+                routingKey: routingKey,
+                decreaseTtl: decreaseTtl,
+                correlationId: correlationId
+                );
+        }
+
+        /// <inheritdoc />
+        public async ValueTask SendAsync(
+            ReadOnlyMemory<byte> obj,
             IBasicProperties props,
             string routingKey,
             string? exchange = default,
@@ -307,11 +347,9 @@ namespace RabbitMQCoreClient
             bool decreaseTtl = true,
             string? correlationId = default)
         {
-            var messages = new List<string>();
+            var messages = new List<ReadOnlyMemory<byte>>();
             foreach (var obj in objs)
-            {
                 messages.Add(_serializer.Serialize(obj));
-            }
 
             return SendJsonBatchAsync(
                 serializedJsonList: messages,
@@ -320,6 +358,43 @@ namespace RabbitMQCoreClient
                 decreaseTtl: decreaseTtl,
                 correlationId: correlationId
             );
+        }
+
+        /// <inheritdoc />
+        public async ValueTask SendBatchAsync(
+            IEnumerable<(ReadOnlyMemory<byte> Body, IBasicProperties Props)> objs,
+            string routingKey,
+            string? exchange = default,
+            bool decreaseTtl = true,
+            string? correlationId = default)
+        {
+            if (string.IsNullOrEmpty(exchange))
+                exchange = GetDefaultExchange();
+
+            if (string.IsNullOrEmpty(exchange))
+                throw new ArgumentException($"{nameof(exchange)} is null or empty.", nameof(exchange));
+
+            CheckSendChannelOpened();
+
+            await _semaphoreSlim.WaitAsync();
+            try
+            {
+                var batchOperation = CreateBasicJsonBatchProperties();
+
+                foreach (var (Body, Props) in objs)
+                {
+                    AddTtl(Props, decreaseTtl);
+                    AddCorrelationId(Props, correlationId);
+
+                    batchOperation?.Add(exchange, routingKey, false, Props, Body);
+                }
+                batchOperation?.Publish();
+                _log.LogDebug("Sent raw messages batch to exchange {exchange} with routing key {routingKey}.", exchange, routingKey);
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
         }
 
         /// <inheritdoc />
@@ -353,40 +428,32 @@ namespace RabbitMQCoreClient
         }
 
         /// <inheritdoc />
-        public async ValueTask SendBatchAsync(
-            IEnumerable<(byte[] Body, IBasicProperties Props)> objs,
+        public ValueTask SendJsonBatchAsync(
+            IEnumerable<ReadOnlyMemory<byte>> serializedJsonList,
             string routingKey,
             string? exchange = default,
             bool decreaseTtl = true,
             string? correlationId = default)
         {
-            if (string.IsNullOrEmpty(exchange))
-                exchange = GetDefaultExchange();
-
-            if (string.IsNullOrEmpty(exchange))
-                throw new ArgumentException($"{nameof(exchange)} is null or empty.", nameof(exchange));
-
-            CheckSendChannelOpened();
-
-            await _semaphoreSlim.WaitAsync();
-            try
+            var messages = new List<(ReadOnlyMemory<byte> Body, IBasicProperties Props)>();
+            foreach (var json in serializedJsonList)
             {
-                var batchOperation = CreateBasicJsonBatchProperties();
+                var props = CreateBasicJsonProperties();
+                AddTtl(props, decreaseTtl);
+                AddCorrelationId(props, correlationId);
 
-                foreach (var (Body, Props) in objs)
-                {
-                    AddTtl(Props, decreaseTtl);
-                    AddCorrelationId(Props, correlationId);
+                messages.Add((json, props));
+            }
 
-                    batchOperation?.Add(exchange, routingKey, false, Props, new ReadOnlyMemory<byte>(Body));
-                }
-                batchOperation?.Publish();
-                _log.LogDebug("Sent raw messages batch to exchange {exchange} with routing key {routingKey}.", exchange, routingKey);
-            }
-            finally
-            {
-                _semaphoreSlim.Release();
-            }
+            _log.LogDebug("Sending json messages batch to exchange {exchange} with routing key {routingKey}.", exchange, routingKey);
+
+            return SendBatchAsync(
+                objs: messages,
+                exchange: exchange,
+                routingKey: routingKey,
+                decreaseTtl: decreaseTtl,
+                correlationId: correlationId
+            );
         }
 
         void Connection_CallbackException(object? sender, CallbackExceptionEventArgs e)

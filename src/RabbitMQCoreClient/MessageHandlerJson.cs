@@ -2,6 +2,7 @@
 using RabbitMQCoreClient.Models;
 using RabbitMQCoreClient.Serializers;
 using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient
@@ -51,9 +52,9 @@ namespace RabbitMQCoreClient
         public IMessageSerializer Serializer { get; set; } = new NewtonsoftJsonMessageSerializer();
 
         /// <inheritdoc />
-        public async Task HandleMessage(string message, RabbitMessageEventArgs args)
+        public async Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args)
         {
-            RawJson = message;
+            RawJson = Encoding.UTF8.GetString(message.ToArray());
             TModel messageModel;
             try
             {
@@ -64,7 +65,7 @@ namespace RabbitMQCoreClient
             }
             catch (Exception e)
             {
-                await OnParseError(message, e, args);
+                await OnParseError(RawJson, e, args);
                 // Fall to the top-level exception handler.
                 throw;
             }
