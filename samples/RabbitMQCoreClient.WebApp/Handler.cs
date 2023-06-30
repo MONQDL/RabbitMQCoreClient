@@ -2,6 +2,7 @@
 using RabbitMQCoreClient.Models;
 using RabbitMQCoreClient.Serializers;
 using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient.WebApp;
@@ -33,9 +34,9 @@ public class RawHandler : IMessageHandler
     public ConsumerHandlerOptions Options { get; set; }
     public IMessageSerializer Serializer { get; set; }
 
-    public Task HandleMessage(string message, RabbitMessageEventArgs args)
+    public Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args)
     {
-        Console.WriteLine(message);
+        Console.WriteLine(Encoding.UTF8.GetString(message.ToArray()));
         throw new Exception();
         return Task.CompletedTask;
     }
