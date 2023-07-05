@@ -1,6 +1,7 @@
 ﻿using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Models;
 using RabbitMQCoreClient.Serializers;
+using System;
 using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient
@@ -13,9 +14,9 @@ namespace RabbitMQCoreClient
         /// <summary>
         /// Process the message asynchronously.
         /// </summary>
-        /// <param name="message">Input json string with object and its type.</param>
+        /// <param name="message">Input byte array from condumed by RabbitMQ queue.</param>
         /// <param name="args">The <see cref="RabbitMessageEventArgs"/> instance containing the message data.</param>
-        Task HandleMessage(string message, RabbitMessageEventArgs args);
+        Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args);
 
         /// <summary>
         /// Instructions to the router in case of an exception while processing a message.

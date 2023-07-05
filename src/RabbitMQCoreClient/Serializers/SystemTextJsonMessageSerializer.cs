@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.Json.Serialization;
 
 namespace RabbitMQCoreClient.Serializers
 {
@@ -9,11 +10,14 @@ namespace RabbitMQCoreClient.Serializers
         public SystemTextJsonMessageSerializer(Action<System.Text.Json.JsonSerializerOptions>? setupAction = null)
         {
             if (setupAction is null)
+            {
                 Options = new System.Text.Json.JsonSerializerOptions
                 {
-                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                    PropertyNameCaseInsensitive = true,
                     DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
                 };
+                Options.Converters.Add(new JsonStringEnumConverter());
+            }
             else
             {
                 Options = new System.Text.Json.JsonSerializerOptions();
@@ -22,15 +26,11 @@ namespace RabbitMQCoreClient.Serializers
         }
 
         /// <inheritdoc />
-        public string Serialize<TValue>(TValue value)
-        {
-            return System.Text.Json.JsonSerializer.Serialize(value, Options);
-        }
+        public ReadOnlyMemory<byte> Serialize<TValue>(TValue value) =>
+            System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value, Options);
 
         /// <inheritdoc />
-        public TResult? Deserialize<TResult>(string value)
-        {
-            return System.Text.Json.JsonSerializer.Deserialize<TResult>(value, Options);
-        }
+        public TResult? Deserialize<TResult>(ReadOnlyMemory<byte> value) => 
+            System.Text.Json.JsonSerializer.Deserialize<TResult>(value.Span, Options);
     }
 }

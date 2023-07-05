@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace RabbitMQCoreClient.Configuration
+﻿namespace RabbitMQCoreClient.Configuration
 {
 #pragma warning disable CS1591
     internal static class AppConstants

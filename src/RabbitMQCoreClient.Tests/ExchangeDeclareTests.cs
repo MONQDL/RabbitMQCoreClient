@@ -2,7 +2,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;

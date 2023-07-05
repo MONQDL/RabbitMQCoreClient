@@ -1,4 +1,6 @@
-﻿namespace RabbitMQCoreClient.Serializers
+﻿using System;
+
+namespace RabbitMQCoreClient.Serializers
 {
     /// <summary>
     /// The serialization factory that uses be the RabbitMQCoreClient to serialize/deserialize messages.
@@ -11,14 +13,14 @@
         /// <typeparam name="TValue">The value type.</typeparam>
         /// <param name="value">The object to serialize.</param>
         /// <returns>Serialized string.</returns>
-        string Serialize<TValue>(TValue value);
+        ReadOnlyMemory<byte> Serialize<TValue>(TValue value);
 
         /// <summary>
         /// Deserialize the value <paramref name="value"/> from string to <typeparamref name="TResult"/> type.
         /// </summary>
         /// <typeparam name="TResult">The result type.</typeparam>
-        /// <param name="value">The serialized string.</param>
+        /// <param name="value">The byte array of the message from the provider as ReadOnlyMemory &lt;byte&gt;.</param>
         /// <returns>The object of type <typeparamref name="TResult"/> or null.</returns>
-        TResult? Deserialize<TResult>(string value);
+        TResult? Deserialize<TResult>(ReadOnlyMemory<byte> value);
     }
 }
