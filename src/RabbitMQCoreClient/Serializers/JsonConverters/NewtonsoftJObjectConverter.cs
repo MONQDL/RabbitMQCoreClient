@@ -15,7 +15,12 @@ namespace RabbitMQCoreClient.Serializers.JsonConverters
 
         public override void Write(Utf8JsonWriter writer, Newtonsoft.Json.Linq.JObject value, JsonSerializerOptions options)
         {
+#if NET5_0
+            using var doc = JsonDocument.Parse(value.ToString());
+            doc.WriteTo(writer);
+#else
             writer.WriteRawValue(value.ToString());
+#endif
         }
     }
 }
