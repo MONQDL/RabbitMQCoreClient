@@ -409,6 +409,7 @@ class Program
 ```
 
 The default serializer is set to `System.Text.Json` due to improved performance compared to `Newtonsoft.Json`.
+Due to legacy models that contains `JObject` and `JArray` properties the System.Text.Json default serializer has converters of the NewtonsoftJson objects to serialize and deserialize.
 
 If you want to use different serializers for different message handlers that you can set CustomSerializer at the Handler configuration stage.
 
