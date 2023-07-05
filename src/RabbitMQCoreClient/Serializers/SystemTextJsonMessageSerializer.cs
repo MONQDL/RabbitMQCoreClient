@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RabbitMQCoreClient.Serializers.JsonConverters;
+using System;
 using System.Text.Json.Serialization;
 
 namespace RabbitMQCoreClient.Serializers
@@ -17,6 +18,9 @@ namespace RabbitMQCoreClient.Serializers
                     DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
                 };
                 Options.Converters.Add(new JsonStringEnumConverter());
+                Options.Converters.Add(new NewtonsoftJObjectConverter());
+                Options.Converters.Add(new NewtonsoftJArrayConverter());
+                Options.Converters.Add(new NewtonsoftJTokenConverter());
             }
             else
             {
@@ -30,7 +34,7 @@ namespace RabbitMQCoreClient.Serializers
             System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value, Options);
 
         /// <inheritdoc />
-        public TResult? Deserialize<TResult>(ReadOnlyMemory<byte> value) => 
+        public TResult? Deserialize<TResult>(ReadOnlyMemory<byte> value) =>
             System.Text.Json.JsonSerializer.Deserialize<TResult>(value.Span, Options);
     }
 }
