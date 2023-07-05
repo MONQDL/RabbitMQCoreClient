@@ -1,5 +1,5 @@
-﻿using System;
-using System.Text.Json;
+﻿using RabbitMQCoreClient.Serializers.JsonConverters;
+using System;
 using System.Text.Json.Serialization;
 
 namespace RabbitMQCoreClient.Serializers
