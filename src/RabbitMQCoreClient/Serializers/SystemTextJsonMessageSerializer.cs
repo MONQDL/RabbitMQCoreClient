@@ -6,21 +6,29 @@ namespace RabbitMQCoreClient.Serializers
 {
     public class SystemTextJsonMessageSerializer : IMessageSerializer
     {
+        static readonly System.Text.Json.JsonSerializerOptions _defaultOptions = new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+        };
+
+        public static System.Text.Json.JsonSerializerOptions DefaultOptions => _defaultOptions;
+
+        static SystemTextJsonMessageSerializer()
+        {
+            _defaultOptions.Converters.Add(new JsonStringEnumConverter());
+            _defaultOptions.Converters.Add(new NewtonsoftJObjectConverter());
+            _defaultOptions.Converters.Add(new NewtonsoftJArrayConverter());
+            _defaultOptions.Converters.Add(new NewtonsoftJTokenConverter());
+        }
+
         public System.Text.Json.JsonSerializerOptions Options { get; }
 
         public SystemTextJsonMessageSerializer(Action<System.Text.Json.JsonSerializerOptions>? setupAction = null)
         {
             if (setupAction is null)
             {
-                Options = new System.Text.Json.JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true,
-                    DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
-                };
-                Options.Converters.Add(new JsonStringEnumConverter());
-                Options.Converters.Add(new NewtonsoftJObjectConverter());
-                Options.Converters.Add(new NewtonsoftJArrayConverter());
-                Options.Converters.Add(new NewtonsoftJTokenConverter());
+                Options = _defaultOptions;
             }
             else
             {
