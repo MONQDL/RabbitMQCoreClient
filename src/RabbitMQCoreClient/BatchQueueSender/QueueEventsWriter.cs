@@ -38,7 +38,7 @@ namespace RabbitMQCoreClient.BatchQueueSender
 
             try
             {
-                await _queueService.SendBatchAsync(items, routingKey, new System.Text.Json.JsonSerializerOptions());
+                await _queueService.SendBatchAsync(items, routingKey);
             }
             catch (Exception e)
             {

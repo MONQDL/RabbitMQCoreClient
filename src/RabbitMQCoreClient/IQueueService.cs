@@ -197,5 +197,24 @@ namespace RabbitMQCoreClient
             string? exchange = default,
             bool decreaseTtl = true,
             string? correlationId = default);
+
+        /// <summary>
+        /// Send batch messages to the queue (thread safe method).
+        /// </summary>
+        /// <param name="serializedJsonList">A list of serialized json to be sent to the queue in batch.</param>
+        /// <param name="routingKey">The routing key with which the message will be sent.</param>
+        /// <param name="exchange">The name of the exchange point to which the message is to be sent.</param>
+        /// <param name="decreaseTtl">If <c>true</c> then decrease TTL.</param>
+        /// <param name="correlationId">Correlation Id, which is used to log messages.</param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException">jsonString - jsonString
+        /// or
+        /// exchange - exchange</exception>
+        ValueTask SendJsonBatchAsync(
+            IEnumerable<ReadOnlyMemory<byte>> serializedJsonList,
+            string routingKey,
+            string? exchange = default,
+            bool decreaseTtl = true,
+            string? correlationId = default);
     }
 }
