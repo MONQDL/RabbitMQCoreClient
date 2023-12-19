@@ -67,7 +67,7 @@ namespace RabbitMQCoreClient.BatchQueueSender
         }
 
         /// <inheritdoc />
-        public async Task AddEvent<T>(IEnumerable<T> events, string routingKey)
+        public async Task AddEvents<T>(IEnumerable<T> events, string routingKey)
         {
             await _semaphore.WaitAsync();
 
