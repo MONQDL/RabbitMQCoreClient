@@ -17,12 +17,12 @@ namespace RabbitMQCoreClient.BatchQueueSender
         Task AddEvent<T>(T @event, string routingKey);
 
         /// <summary>
-        /// Add an event to send to the data bus.
+        /// Add events to send to the data bus.
         /// </summary>
         /// <typeparam name="T">The type of list item of the <paramref name="events"/> property.</typeparam>
         /// <param name="events">The list of objects to send to the data bus.</param>
         /// <param name="routingKey">The name of the route key with which you want to send events to the data bus.</param>
         /// <returns></returns>
-        Task AddEvent<T>(IEnumerable<T> events, string routingKey);
+        Task AddEvents<T>(IEnumerable<T> events, string routingKey);
     }
 }

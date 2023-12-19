@@ -124,7 +124,7 @@ static async Task CreateBatchSender(IQueueEventsBufferEngine batchSender, Cancel
         {
             await Task.Delay(500, token);
             var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
-            await batchSender.AddEvent(bodyList, "test_routing_key");
+            await batchSender.AddEvents(bodyList, "test_routing_key");
         }
         catch (Exception e)
         {
