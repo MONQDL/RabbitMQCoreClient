@@ -58,7 +58,7 @@ namespace RabbitMQCoreClient
 
         string? GetDefaultExchange() => _exchanges.FirstOrDefault(x => x.Options.IsDefault)?.Name;
 
-        int _reconnectAttemptsCount = 0;
+        long _reconnectAttemptsCount;
 
         /// <summary>
         /// Initializes a new instance of the class <see cref="QueueServiceImpl" />.
@@ -188,7 +188,7 @@ namespace RabbitMQCoreClient
 
             while (!mres.Wait(Options.ReconnectionTimeout)) // loop until state is true, checking every Options.ReconnectionTimeout
             {
-                if (_reconnectAttemptsCount > Options.ReconnectionAttemptsCount)
+                if (Options.ReconnectionAttemptsCount is not null && _reconnectAttemptsCount > Options.ReconnectionAttemptsCount)
                     throw new ReconnectAttemptsExceededException($"Max reconnect attempts {Options.ReconnectionAttemptsCount} reached.");
 
                 try
@@ -207,7 +207,7 @@ namespace RabbitMQCoreClient
                     string? innerExceptionMessage = null;
                     if (e.InnerException != null)
                         innerExceptionMessage = e.InnerException.Message;
-                    _log.LogCritical(e, $"Connection failed. Detais: {e.Message} {innerExceptionMessage}. Reconnect attempts: {_reconnectAttemptsCount}", e);
+                    _log.LogCritical(e, $"Connection failed. Details: {e.Message} {innerExceptionMessage}. Reconnect attempts: {_reconnectAttemptsCount}", e);
                 }
             }
         }
