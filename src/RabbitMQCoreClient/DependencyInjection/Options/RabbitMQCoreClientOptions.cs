@@ -40,9 +40,11 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
 
         /// <summary>
         /// Reconnection attempts count.
-        /// Default: 20. Means after 60 sec it will rise ConnectionException.
+        /// Default: null.
+        /// So it will try to establish a connection every 3 seconds an unlimited number of times.
+        /// In other case ConnectionException will occur when the limit is reached.
         /// </summary>
-        public int ReconnectionAttemptsCount { get; set; } = 20;
+        public int? ReconnectionAttemptsCount { get; set; }
 
         /// <summary>
         /// User who has rights to connect to the server <see cref="HostName"/>.
