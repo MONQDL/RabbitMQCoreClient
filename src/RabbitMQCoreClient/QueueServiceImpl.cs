@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -9,6 +9,7 @@ using RabbitMQCoreClient.Serializers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -320,6 +321,13 @@ namespace RabbitMQCoreClient
             if (string.IsNullOrEmpty(exchange))
                 throw new ArgumentException($"{nameof(exchange)} is null or empty.", nameof(exchange));
 
+            if (obj.Length > Options.MaxBodySize)
+            {
+                string decodedString = DecodeMessageAsString(obj);
+                throw new BadMessageException($"The message size \"{obj.Length}\" exceeds max body limit of \"{Options.MaxBodySize}\" " +
+                    $"on routing key \"{routingKey}\" (exchange: \"{exchange}\"). Decoded message part: {decodedString}");
+            }
+
             CheckSendChannelOpened();
 
             await _semaphoreSlim.WaitAsync();
@@ -332,6 +340,10 @@ namespace RabbitMQCoreClient
                                      basicProperties: props,
                                      body: obj);
                 _log.LogDebug("Sent raw message to exchange {exchange} with routing key {routingKey}.", exchange, routingKey);
+            }
+            catch
+            {
+                throw;
             }
             finally
             {
@@ -381,15 +393,33 @@ namespace RabbitMQCoreClient
             {
                 var batchOperation = CreateBasicJsonBatchProperties();
 
-                foreach (var (Body, Props) in objs)
+                foreach (var (body, props) in objs)
                 {
-                    AddTtl(Props, decreaseTtl);
-                    AddCorrelationId(Props, correlationId);
+                    if (body.Length > Options.MaxBodySize)
+                    {
+                        string decodedString = DecodeMessageAsString(body);
 
-                    batchOperation?.Add(exchange, routingKey, false, Props, Body);
+                        _log.LogError("Skipped message due to message size \"{messageSize}\" exceeds max body limit of \"{maxBodySize}\" " +
+                            "on routing key \"{routingKey}\" (exchange: \"{exchange}\". Decoded message part: {DecodedString})",
+                            body.Length,
+                            Options.MaxBodySize,
+                            routingKey,
+                            exchange,
+                            decodedString);
+                        continue;
+                    }
+
+                    AddTtl(props, decreaseTtl);
+                    AddCorrelationId(props, correlationId);
+
+                    batchOperation?.Add(exchange, routingKey, false, props, body);
                 }
                 batchOperation?.Publish();
                 _log.LogDebug("Sent raw messages batch to exchange {exchange} with routing key {routingKey}.", exchange, routingKey);
+            }
+            catch
+            {
+                throw;
             }
             finally
             {
@@ -526,6 +556,42 @@ namespace RabbitMQCoreClient
 
             if (_connectionBlocked)
                 throw new NotConnectedException("Connection is blocked.");
+        }
+
+        /// <summary>
+        /// Try decode bytes array to string 1024 length or write as hex.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        static string DecodeMessageAsString(ReadOnlyMemory<byte> obj)
+        {
+            int bufferSize = 1024; // We need ~1 KB of text to log.
+            int decodedStringLength = Math.Min(obj.Length, bufferSize);
+            ReadOnlySpan<byte> slice = obj.Span.Slice(0, decodedStringLength);
+
+            // Find the index of the last complete character
+            int lastValidIndex = slice.Length - 1;
+            while (lastValidIndex >= 0 && (slice[lastValidIndex] & 0b11000000) == 0b10000000)
+            {
+                // If a byte is a "continuation" of a UTF-8 character (starts with 10xxxxxx),
+                // it means that it is part of the previous character and needs to be discarded.
+                lastValidIndex--;
+            }
+
+            // Truncating to the last valid character
+            slice = slice.Slice(0, lastValidIndex + 1);
+
+            // Checking the string is UTF8
+            var decoder = Encoding.UTF8.GetDecoder();
+            char[] buffer = new char[decodedStringLength];
+            decoder.Convert(slice, buffer, flush: true, out _, out int charsUsed, out bool completed);
+            if (completed)
+                return new string(buffer, 0, charsUsed);
+            else
+            {
+                // Generating bytes as string.
+                return BitConverter.ToString(obj.Span.ToArray(), 0, decodedStringLength);
+            }
         }
     }
 }

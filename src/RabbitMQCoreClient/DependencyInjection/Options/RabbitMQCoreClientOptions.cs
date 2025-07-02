@@ -1,4 +1,4 @@
-﻿using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Events;
 using System;
 using System.Net.Security;
 using System.Security.Authentication;
@@ -127,5 +127,10 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
         /// Retrieve or set the path to client certificate.
         /// </summary>
         public string? SslCertPath { get; set; }
+
+        /// <summary>
+        /// The maximum message body size limit. Default is 16MBi.
+        /// </summary>
+        public int MaxBodySize { get; set; } = 16 * 1024 * 1024; // 16 МБи
     }
 }
