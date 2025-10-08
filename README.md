@@ -1,4 +1,4 @@
-﻿# RabbitMQ Client library for .net core applications with Dependency Injection support
+# RabbitMQ Client library for .net core applications with Dependency Injection support
 
 Library Version: v6
 
@@ -606,6 +606,7 @@ Set to true to check peer certificate for revocation.
   "SslCheckCertificateRevocation": false, // Introduced in v5.3.0
   "SslCertPassphrase": "pass", // Introduced in v5.3.0
   "SslCertPath": "/certs", // Introduced in v5.3.0
+  "MaxBodySize": 16777216, // Introduced in v6.1.1
   "Queues": [
     {
       "Name": "my_queue1",
