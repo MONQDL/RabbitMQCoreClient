@@ -1,8 +1,6 @@
 using Microsoft.Extensions.Logging;
 using RabbitMQCoreClient.BatchQueueSender.Exceptions;
-using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient.BatchQueueSender;
 
@@ -31,7 +29,8 @@ public class QueueEventsWriter : IQueueEventsWriter
         if (items.Length == 0)
             return;
 
-        _logger.LogInformation("Start writing {RowsCount} data rows from the buffer.", items.Length);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Start writing {RowsCount} data rows from the buffer.", items.Length);
 
         var sw = new Stopwatch();
         sw.Start();
@@ -47,8 +46,9 @@ public class QueueEventsWriter : IQueueEventsWriter
 
         sw.Stop();
 
-        _logger.LogInformation("Buffer has sent {RowsCount} rows to the queue bus at {ElapsedMilliseconds} ms.",
-            items.Length, sw.ElapsedMilliseconds);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Buffer has sent {RowsCount} rows to the queue bus at {ElapsedMilliseconds} ms.",
+                items.Length, sw.ElapsedMilliseconds);
 
         _writtenCount += items.Length;
 

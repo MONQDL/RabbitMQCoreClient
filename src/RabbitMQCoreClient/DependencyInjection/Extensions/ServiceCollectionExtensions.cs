@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using RabbitMQCoreClient.Configuration.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.DependencyInjection.ConfigFormats;
-using System;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -13,7 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
-    static IRabbitMQCoreClientBuilder AddRabbitMQCoreClient(this IServiceCollection services)
+    static RabbitMQCoreClientBuilder AddRabbitMQCoreClient(this IServiceCollection services)
     {
         var builder = new RabbitMQCoreClientBuilder(services);
 
@@ -55,7 +54,9 @@ public static class ServiceCollectionExtensions
     public static IRabbitMQCoreClientBuilder AddRabbitMQCoreClient(this IServiceCollection services,
         Action<RabbitMQCoreClientOptions>? setupAction)
     {
-        services.Configure(setupAction);
+        if (setupAction != null)
+            services.Configure(setupAction);
+
         return services.AddRabbitMQCoreClient();
     }
 

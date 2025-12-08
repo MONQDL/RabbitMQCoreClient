@@ -1,5 +1,3 @@
-using System;
-
 namespace RabbitMQCoreClient.Exceptions;
 
 public class BadMessageException : Exception

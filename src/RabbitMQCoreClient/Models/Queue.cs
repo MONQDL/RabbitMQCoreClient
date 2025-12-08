@@ -1,6 +1,4 @@
 using RabbitMQCoreClient.DependencyInjection.ConfigModels;
-using System;
-using System.Collections.Generic;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 
@@ -21,8 +19,8 @@ public sealed class Queue : QueueBase
     /// </summary>
     /// <param name="queueConfig">Queue model from IConfiguration.</param>
     /// <returns></returns>
-    public static Queue Create(QueueConfig queueConfig) => 
-        new Queue(name: queueConfig.Name,
+    public static Queue Create(QueueConfig queueConfig) =>
+        new(name: queueConfig.Name,
                   durable: queueConfig.Durable,
                   exclusive: queueConfig.Exclusive,
                   autoDelete: queueConfig.AutoDelete,
@@ -31,7 +29,7 @@ public sealed class Queue : QueueBase
             Arguments = queueConfig.Arguments ?? new Dictionary<string, object?>(),
             DeadLetterExchange = queueConfig.DeadLetterExchange,
             UseQuorum = queueConfig.UseQuorum,
-            Exchanges = queueConfig.Exchanges ?? new HashSet<string>(),
-            RoutingKeys = queueConfig.RoutingKeys ?? new HashSet<string>()
+            Exchanges = queueConfig.Exchanges ?? [],
+            RoutingKeys = queueConfig.RoutingKeys ?? []
         };
 }

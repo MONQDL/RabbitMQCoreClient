@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 
 /// <summary>

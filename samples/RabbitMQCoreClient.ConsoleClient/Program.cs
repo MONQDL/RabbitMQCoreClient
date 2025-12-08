@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -7,7 +7,6 @@ using RabbitMQCoreClient.BatchQueueSender;
 using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.ConsoleClient;
-using RabbitMQCoreClient.Serializers;
 using System;
 using System.Linq;
 using System.Text;

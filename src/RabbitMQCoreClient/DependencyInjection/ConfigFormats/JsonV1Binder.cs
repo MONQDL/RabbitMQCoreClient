@@ -4,8 +4,6 @@ using RabbitMQCoreClient.Configuration.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.DependencyInjection.ConfigModels;
 using RabbitMQCoreClient.Exceptions;
-using System;
-using System.Linq;
 
 namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats;
 
@@ -15,7 +13,6 @@ public static class JsonV1Binder
     const string QueueName = "Queue:QueueName";
     const string ExchangeName = "Exchange:Name";
     const string SubscriptionSection = "Subscription";
-    const string UseQuorumQueuesName = "UseQuorumQueues";
 
     public static IRabbitMQCoreClientBuilder RegisterV1Configuration(this IRabbitMQCoreClientBuilder builder,
         IConfiguration? configuration)
@@ -44,13 +41,9 @@ public static class JsonV1Binder
             return builder;
 
         // Old queue format detected.
-        var exchange = builder.Builder.Exchanges.FirstOrDefault(x => x.Name == oldExchangeName);
-        if (exchange is null)
-            throw new ClientConfigurationException($"The exchange {oldExchangeName} is " +
+        var exchange = builder.Builder.Exchanges.FirstOrDefault(x => x.Name == oldExchangeName)
+            ?? throw new ClientConfigurationException($"The exchange {oldExchangeName} is " +
                 "not found in \"Exchange\" section.");
-
-        var useQuorumQueues = configuration.GetValue<bool>(UseQuorumQueuesName);
-
         if (configuration.GetSection(QueueSection).Exists())
         {
             // Register a queue and bind it to exchange points.

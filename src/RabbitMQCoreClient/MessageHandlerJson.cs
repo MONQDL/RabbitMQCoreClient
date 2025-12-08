@@ -1,9 +1,7 @@
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Models;
 using RabbitMQCoreClient.Serializers;
-using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient;
 
@@ -58,9 +56,8 @@ public abstract class MessageHandlerJson<TModel> : IMessageHandler
         TModel messageModel;
         try
         {
-            var obj = Serializer.Deserialize<TModel>(message);
-            if (obj is null)
-                throw new InvalidOperationException("The json parser returns null.");
+            var obj = Serializer.Deserialize<TModel>(message)
+                ?? throw new InvalidOperationException("The json parser returns null.");
             messageModel = obj;
         }
         catch (Exception e)

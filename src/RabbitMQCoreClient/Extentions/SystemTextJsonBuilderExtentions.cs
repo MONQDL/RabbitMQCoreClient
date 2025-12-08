@@ -1,5 +1,4 @@
 using RabbitMQCoreClient.Serializers;
-using System;
 using System.Text.Json;
 
 namespace Microsoft.Extensions.DependencyInjection;

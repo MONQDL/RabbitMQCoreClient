@@ -7,13 +7,8 @@ using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Events;
 using RabbitMQCoreClient.Exceptions;
 using RabbitMQCoreClient.Serializers;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using static RabbitMQCoreClient.Configuration.AppConstants.RabbitMQHeaders;
 
 namespace RabbitMQCoreClient;
@@ -62,7 +57,7 @@ public sealed class QueueService : IQueueService
         Options = options ?? throw new ArgumentNullException(nameof(options), $"{nameof(options)} is null.");
         _log = loggerFactory.CreateLogger<QueueService>();
         _exchanges = builder.Exchanges;
-        _serializer = builder.Serializer;
+        _serializer = builder.Serializer ?? new SystemTextJsonMessageSerializer();
     }
 
     /// <summary>
@@ -277,20 +272,17 @@ public sealed class QueueService : IQueueService
     }
 
     /// <inheritdoc />
-    public async ValueTask SendAsync(
+    public ValueTask SendAsync(
         byte[] obj,
         BasicProperties props,
         string routingKey,
         string? exchange = default,
-        bool decreaseTtl = true)
-    {
-        await SendAsync(new ReadOnlyMemory<byte>(obj),
+        bool decreaseTtl = true) => SendAsync(new ReadOnlyMemory<byte>(obj),
             props: props,
             exchange: exchange,
             routingKey: routingKey,
             decreaseTtl: decreaseTtl
             );
-    }
 
     /// <inheritdoc />
     public ValueTask SendBatchAsync<T>(
@@ -384,7 +376,7 @@ public sealed class QueueService : IQueueService
 
         if (obj.Length > Options.MaxBodySize)
         {
-            string decodedString = DecodeMessageAsString(obj);
+            var decodedString = DecodeMessageAsString(obj);
             throw new BadMessageException($"The message size \"{obj.Length}\" exceeds max body limit of \"{Options.MaxBodySize}\" " +
                 $"on routing key \"{routingKey}\" (exchange: \"{exchange}\"). Decoded message part: {decodedString}");
         }
@@ -419,7 +411,7 @@ public sealed class QueueService : IQueueService
 
         const ushort MAX_OUTSTANDING_CONFIRMS = 256;
 
-        int batchSize = Math.Max(1, MAX_OUTSTANDING_CONFIRMS / 2);
+        var batchSize = Math.Max(1, MAX_OUTSTANDING_CONFIRMS / 2);
 
         var publishTasks = new List<ValueTask>();
 
@@ -427,7 +419,7 @@ public sealed class QueueService : IQueueService
         {
             if (body.Length > Options.MaxBodySize)
             {
-                string decodedString = DecodeMessageAsString(body);
+                var decodedString = DecodeMessageAsString(body);
 
                 _log.LogError("Skipped message due to message size '{MessageSize}' exceeds max body limit of '{MaxBodySize}' " +
                     "on routing key '{RoutingKey}' (exchange: '{Exchange}'. Decoded message part: {DecodedString})",
@@ -464,7 +456,7 @@ public sealed class QueueService : IQueueService
     {
         if (publishTasks.Count >= batchSize)
         {
-            foreach (ValueTask pt in publishTasks)
+            foreach (var pt in publishTasks)
             {
                 try
                 {
@@ -506,7 +498,7 @@ public sealed class QueueService : IQueueService
             _log.LogError("Connection broke! Reason: {BrokeReason}", args.ReplyText);
 
         if (ConnectionShutdownAsync != null)
-            await ConnectionShutdownAsync.Invoke(sender ?? this, args);
+            await ConnectionShutdownAsync.Invoke(sender ?? this, args!);
 
         await Reconnect();
     }
@@ -532,15 +524,49 @@ public sealed class QueueService : IQueueService
 
     void AddTtl(BasicProperties props, bool decreaseTtl)
     {
-        if (decreaseTtl)
+        // Не делаем ничего, если признак “уменьшать TTL” выключен
+        if (!decreaseTtl) return;
+        // Убедимся, что словарь заголовков существует
+        props.Headers ??= new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        // Попробуем получить текущий TTL
+        var currentTtl = Options.DefaultTtl;   // <‑- значение по умолчанию
+        if (props.Headers.TryGetValue(TtlHeader, out var ttlObj)
+            && !TryParseInt(ttlObj, out currentTtl)) // Попытка безопасно преобразовать к int
         {
-            if (props.Headers == null)
-                props.Headers = new Dictionary<string, object?>();
+            // В случае неправильного типа – оставляем default.
+            _log.LogWarning("Header '{TtlHeader}' contains invalid value: {TtlObj}",
+                TtlHeader, ttlObj);
+            currentTtl = Options.DefaultTtl;
+        }
+        // Снижаем TTL, но не допускаем отрицательных значений
+        currentTtl = Math.Max(currentTtl - 1, 0);
+        // Обновляем заголовок
+        props.Headers[TtlHeader] = currentTtl;
+    }
 
-            if (props.Headers.ContainsKey(TtlHeader))
-                props.Headers[TtlHeader] = (int)props.Headers[TtlHeader] - 1;
-            else
-                props.Headers.Add(TtlHeader, Options.DefaultTtl);
+    static bool TryParseInt(object? value, out int result)
+    {
+        result = 0;
+        switch (value)
+        {
+            case int i:
+                result = i;
+                return true;
+            case long l when l is >= int.MinValue and <= int.MaxValue:
+                result = (int)l;
+                return true;
+            case short s:
+                result = s;
+                return true;
+            case byte b:
+                result = b;
+                return true;
+            case string str when int.TryParse(str, out var parsed):
+                result = parsed;
+                return true;
+            case null:
+            default:
+                return false;
         }
     }
 
@@ -562,11 +588,11 @@ public sealed class QueueService : IQueueService
     static string DecodeMessageAsString(ReadOnlyMemory<byte> obj)
     {
         int bufferSize = 1024; // We need ~1 KB of text to log.
-        int decodedStringLength = Math.Min(obj.Length, bufferSize);
-        ReadOnlySpan<byte> slice = obj.Span.Slice(0, decodedStringLength);
+        var decodedStringLength = Math.Min(obj.Length, bufferSize);
+        var slice = obj.Span.Slice(0, decodedStringLength);
 
         // Find the index of the last complete character
-        int lastValidIndex = slice.Length - 1;
+        var lastValidIndex = slice.Length - 1;
         while (lastValidIndex >= 0 && (slice[lastValidIndex] & 0b11000000) == 0b10000000)
         {
             // If a byte is a "continuation" of a UTF-8 character (starts with 10xxxxxx),
@@ -579,8 +605,8 @@ public sealed class QueueService : IQueueService
 
         // Checking the string is UTF8
         var decoder = Encoding.UTF8.GetDecoder();
-        char[] buffer = new char[decodedStringLength];
-        decoder.Convert(slice, buffer, flush: true, out _, out int charsUsed, out bool completed);
+        var buffer = new char[decodedStringLength];
+        decoder.Convert(slice, buffer, flush: true, out _, out var charsUsed, out var completed);
         if (completed)
             return new string(buffer, 0, charsUsed);
         else

@@ -1,9 +1,6 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQCoreClient.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 
@@ -59,12 +56,12 @@ public abstract class QueueBase
     /// <summary>
     /// ist of routing keys for the queue.
     /// </summary>
-    public virtual HashSet<string> RoutingKeys { get; set; } = new HashSet<string>();
+    public virtual HashSet<string> RoutingKeys { get; set; } = [];
 
     /// <summary>
     /// The list of exchange points to which the queue is bound.
     /// </summary>
-    public virtual HashSet<string> Exchanges { get; set; } = new HashSet<string>();
+    public virtual HashSet<string> Exchanges { get; set; } = [];
 
     /// <summary>
     /// Declare the queue on <see cref="Exchanges"/> and start consuming messages.
@@ -87,11 +84,8 @@ public abstract class QueueBase
                 durable: UseQuorum || Durable,
                 exclusive: !UseQuorum && Exclusive,
                 autoDelete: !UseQuorum && AutoDelete,
-                arguments: Arguments);
-
-        if (declaredQueue is null)
-            throw new QueueBindException("Queue is not properly bind.");
-
+                arguments: Arguments)
+            ?? throw new QueueBindException("Queue is not properly bind.");
         if (RoutingKeys.Count > 0)
             foreach (var exchangeName in Exchanges)
             {

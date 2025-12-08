@@ -1,6 +1,5 @@
 using RabbitMQCoreClient.Configuration.DependencyInjection;
 using RabbitMQCoreClient.Serializers;
-using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -24,5 +23,5 @@ public interface IRabbitMQCoreClientBuilder
     /// <summary>
     /// The default JSON serializer.
     /// </summary>
-    IMessageSerializer Serializer { get; set; }
+    IMessageSerializer? Serializer { get; set; }
 }

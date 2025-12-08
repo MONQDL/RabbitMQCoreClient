@@ -1,7 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
-using System;
-using System.Collections.Generic;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection;
 
@@ -25,9 +23,9 @@ public sealed class RabbitMQCoreClientConsumerBuilder : IRabbitMQCoreClientConsu
     public IServiceCollection Services { get; }
 
     /// <inheritdoc />
-    public IList<QueueBase> Queues { get; } = new List<QueueBase>();
+    public IList<QueueBase> Queues { get; } = [];
 
     /// <inheritdoc />
     public Dictionary<string, (Type Type, ConsumerHandlerOptions Options)> RoutingHandlerTypes { get; } =
-        new Dictionary<string, (Type Type, ConsumerHandlerOptions Options)>();
+        [];
 }

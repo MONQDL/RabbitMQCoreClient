@@ -1,11 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQCoreClient.BatchQueueSender.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient.BatchQueueSender;
 
@@ -15,13 +10,13 @@ namespace RabbitMQCoreClient.BatchQueueSender;
 public sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDisposable
 {
     readonly Timer _flushTimer;
-    readonly List<QueueEventItem> _events = new List<QueueEventItem>();
+    readonly List<QueueEventItem> _events = [];
     readonly IQueueEventsWriter _eventsWriter;
     readonly QueueBatchSenderOptions _engineOptions;
     readonly ILogger<QueueEventsBufferEngine> _logger;
 
-    static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
-    private bool _disposedValue;
+    static readonly SemaphoreSlim _semaphore = new(1, 1);
+    bool _disposedValue;
 
     /// <summary>
     /// Event storage buffer implementation constructor.
@@ -39,7 +34,7 @@ public sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDisposa
         _eventsWriter = eventsWriter;
         _logger = logger;
 
-        _flushTimer = new Timer(async obj => await FlushTimerDelegate(obj), null,
+        _flushTimer = new Timer(async obj => await FlushTimerDelegate(), null,
             _engineOptions.EventsFlushPeriodSec * 1000,
             _engineOptions.EventsFlushPeriodSec * 1000);
     }
@@ -67,21 +62,16 @@ public sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDisposa
     }
 
     /// <inheritdoc />
-    public Task AddEvent<T>(IEnumerable<T> events, string routingKey)
-        => AddEvents(events, routingKey);
-
-    /// <inheritdoc />
     public async Task AddEvents<T>(IEnumerable<T> events, string routingKey)
     {
         await _semaphore.WaitAsync();
 
         try
         {
-            foreach (var @event in events)
-            {
-                if (@event is not null)
-                    _events.Add(new QueueEventItem(@event, routingKey));
-            }
+            _events.AddRange(events
+                .Where(@event => @event is not null)
+                .Select(@event => new QueueEventItem(@event!, routingKey))
+                );
 
             if (_events.Count < _engineOptions.EventsFlushCount)
                 return;
@@ -94,7 +84,7 @@ public sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDisposa
         }
     }
 
-    async Task FlushTimerDelegate(object? _)
+    async Task FlushTimerDelegate()
     {
         await _semaphore.WaitAsync();
         try
@@ -143,14 +133,11 @@ public sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDisposa
                 .ToList();
             foreach (var aggregateException in exceptions)
             {
-                var persistException = aggregateException?.InnerExceptions?.First() as PersistingException;
-                if (persistException != null)
+                if (aggregateException?.InnerExceptions?[0] is PersistingException persistException)
                 {
-                    var extendedError = string.Join(Environment.NewLine, new[]
-                    {
-                        $"Routing key: {persistException.RoutingKey}. Source: ",
-                            System.Text.Json.JsonSerializer.Serialize(persistException.Items)
-                    });
+                    var extendedError = $"Routing key: {persistException.RoutingKey}. Source: " +
+                            string.Join(Environment.NewLine,
+                            System.Text.Json.JsonSerializer.Serialize(persistException.Items));
                     _logger.LogDebug(extendedError);
                 }
                 // Unrecorded events are not sent anywhere. For the current implementation, this is not fatal.

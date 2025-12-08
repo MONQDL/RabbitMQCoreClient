@@ -1,6 +1,6 @@
 namespace RabbitMQCoreClient.BatchQueueSender;
 
-public struct QueueEventItem
+public readonly struct QueueEventItem
 {
     /// <summary>
     /// The event to be written to the database.

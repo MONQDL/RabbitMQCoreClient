@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using System;
 
 namespace RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
 
@@ -46,7 +45,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddBatchQueueSender(this IServiceCollection services,
         Action<QueueBatchSenderOptions>? setupAction)
     {
-        services.Configure(setupAction);
+        if (setupAction != null)
+            services.Configure(setupAction);
         return services.AddBatchQueueSenderCore();
     }
 

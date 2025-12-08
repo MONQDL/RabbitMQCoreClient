@@ -1,8 +1,6 @@
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Models;
 using RabbitMQCoreClient.Serializers;
-using System;
-using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient;
 

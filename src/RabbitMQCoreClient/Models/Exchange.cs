@@ -1,7 +1,5 @@
 using RabbitMQ.Client;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
-using System;
-using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection;
 
@@ -33,7 +31,7 @@ public class Exchange
         Options = options ?? throw new ArgumentNullException(nameof(options), $"{nameof(options)} is null.");
 
         if (string.IsNullOrEmpty(options.Name))
-            throw new ArgumentException($"{nameof(options.Name)} is null or empty.", nameof(options.Name));
+            throw new ArgumentException($"Name in {nameof(options)} is null or empty.", nameof(options));
     }
 
     /// <summary>

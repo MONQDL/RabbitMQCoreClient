@@ -1,5 +1,3 @@
-using System;
-
 namespace RabbitMQCoreClient.BatchQueueSender.Exceptions;
 
 public class PersistingException : Exception

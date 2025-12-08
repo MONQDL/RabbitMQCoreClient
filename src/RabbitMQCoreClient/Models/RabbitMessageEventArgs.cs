@@ -1,5 +1,3 @@
-using System;
-
 namespace RabbitMQCoreClient.Models;
 
 public class RabbitMessageEventArgs : EventArgs

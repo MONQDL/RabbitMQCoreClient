@@ -1,5 +1,4 @@
 using RabbitMQ.Client.Events;
-using System;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 

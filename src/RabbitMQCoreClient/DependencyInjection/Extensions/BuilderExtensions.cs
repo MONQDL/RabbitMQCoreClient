@@ -6,9 +6,6 @@ using RabbitMQCoreClient.Configuration.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.DependencyInjection.ConfigModels;
 using RabbitMQCoreClient.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -34,7 +31,7 @@ public static class BuilderExtensions
     /// <summary>
     /// Use default serializer as NewtonsoftJson.
     /// </summary>
-    public static IRabbitMQCoreClientBuilder AddDefaultSerializer(this IRabbitMQCoreClientBuilder builder) => 
+    public static IRabbitMQCoreClientBuilder AddDefaultSerializer(this IRabbitMQCoreClientBuilder builder) =>
         builder.AddSystemTextJson();
 
     /// <summary>
@@ -244,9 +241,9 @@ public static class BuilderExtensions
     {
         foreach (var routingKey in routingKeys)
         {
-            if (builder.RoutingHandlerTypes.ContainsKey(routingKey))
+            if (builder.RoutingHandlerTypes.TryGetValue(routingKey, out var result))
                 throw new ClientConfigurationException("The routing key is already being processed by a handler like " +
-                    $"{builder.RoutingHandlerTypes[routingKey].Type.FullName}.");
+                    $"{result.Type.FullName}.");
 
             builder.RoutingHandlerTypes.Add(routingKey, (handlerType, options));
         }

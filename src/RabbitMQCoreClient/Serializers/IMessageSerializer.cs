@@ -1,5 +1,3 @@
-using System;
-
 namespace RabbitMQCoreClient.Serializers;
 
 /// <summary>

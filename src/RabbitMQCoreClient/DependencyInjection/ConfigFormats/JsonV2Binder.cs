@@ -3,8 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.DependencyInjection.ConfigModels;
 using RabbitMQCoreClient.Exceptions;
-using System;
-using System.Linq;
 
 namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats;
 
@@ -78,20 +76,18 @@ public static class JsonV2Binder
     static void RegisterQueue<TQueue>(IRabbitMQCoreClientConsumerBuilder builder, TQueue queue)
         where TQueue : QueueBase
     {
-        if (!queue.Exchanges.Any())
+        if (queue.Exchanges.Count == 0)
         {
-            var defaultExchange = builder.Builder.DefaultExchange;
-            if (defaultExchange is null)
-                throw new QueueBindException($"Queue {queue.Name} has no configured exchanges and the Default Exchange not found.");
+            var defaultExchange = builder.Builder.DefaultExchange
+                ?? throw new QueueBindException($"Queue {queue.Name} has no configured exchanges and the Default Exchange not found.");
             queue.Exchanges.Add(defaultExchange.Name);
         }
         else
         {
-            // Checking echange points declared in queue in configured "Exchanges".
+            // Checking exchange points declared in queue in configured "Exchanges".
             foreach (var exchangeName in queue.Exchanges)
             {
-                var exchange = builder.Builder.Exchanges.FirstOrDefault(x => x.Name == exchangeName);
-                if (exchange is null)
+                if (!builder.Builder.Exchanges.Any(x => x.Name == exchangeName))
                     throw new ClientConfigurationException($"The exchange {exchangeName} configured in queue {queue.Name} " +
                         $"not found in Exchanges section.");
             }

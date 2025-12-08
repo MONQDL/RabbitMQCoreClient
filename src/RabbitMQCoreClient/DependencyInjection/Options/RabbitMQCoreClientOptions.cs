@@ -1,11 +1,9 @@
 using RabbitMQ.Client.Events;
-using System;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Text.Json.Serialization;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
-
 
 public class RabbitMQCoreClientOptions
 {

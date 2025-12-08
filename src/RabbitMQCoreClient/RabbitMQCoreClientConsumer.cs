@@ -6,10 +6,8 @@ using RabbitMQCoreClient.Configuration;
 using RabbitMQCoreClient.Events;
 using RabbitMQCoreClient.Exceptions;
 using RabbitMQCoreClient.Models;
-using System;
-using System.Linq;
+using RabbitMQCoreClient.Serializers;
 using System.Net;
-using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient;
 
@@ -133,13 +131,13 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
             return;
         }
 
-        if (!_builder.RoutingHandlerTypes.ContainsKey(@event.RoutingKey))
+        if (!_builder.RoutingHandlerTypes.TryGetValue(@event.RoutingKey, out var result))
         {
             await RejectDueToNoHandler(@event);
             return;
         }
-        var handlerType = _builder.RoutingHandlerTypes[@event.RoutingKey].Type;
-        var handlerOptions = _builder.RoutingHandlerTypes[@event.RoutingKey].Options;
+        var handlerType = result.Type;
+        var handlerOptions = result.Options;
 
         // Get the message handler service.
         using var scope = _scopeFactory.CreateScope();
@@ -152,7 +150,8 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
 
         handler.Options = handlerOptions ?? new();
         // If user overrides the default serializer then the custom serializer will be used for the handler.
-        handler.Serializer = handler.Options.CustomSerializer ?? _builder.Builder.Serializer;
+        handler.Serializer = handler.Options.CustomSerializer ?? _builder.Builder.Serializer
+            ?? new SystemTextJsonMessageSerializer();
 
         _log.LogDebug("Created scope for handler type {TypeName}. Start processing message.",
             handler.GetType().Name);
@@ -199,10 +198,8 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
         await Start();
     }
 
-    async Task QueueService_OnConnectionShutdown(object? sender, ShutdownEventArgs args)
-    {
-        await StopAndClearConsumer();
-    }
+    Task QueueService_OnConnectionShutdown(object? sender, ShutdownEventArgs args) =>
+        StopAndClearConsumer();
 
     async Task ConfigureDeadLetterExchange()
     {

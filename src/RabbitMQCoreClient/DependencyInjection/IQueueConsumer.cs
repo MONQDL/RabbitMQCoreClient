@@ -1,7 +1,5 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System;
-using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

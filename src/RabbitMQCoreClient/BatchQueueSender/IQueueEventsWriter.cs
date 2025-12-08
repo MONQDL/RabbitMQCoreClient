@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 namespace RabbitMQCoreClient.BatchQueueSender;
 
 /// <summary>

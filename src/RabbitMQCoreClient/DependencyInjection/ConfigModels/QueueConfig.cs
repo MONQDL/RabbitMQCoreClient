@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace RabbitMQCoreClient.DependencyInjection.ConfigModels;
 
 /// <summary>
@@ -58,10 +55,10 @@ public class QueueConfig
     /// <summary>
     /// List of routing keys for the queue.
     /// </summary>
-    public HashSet<string> RoutingKeys { get; set; } = new HashSet<string>();
+    public HashSet<string> RoutingKeys { get; set; } = [];
 
     /// <summary>
     /// The list of exchange points to which the queue is bound.
     /// </summary>
-    public HashSet<string> Exchanges { get; set; } = new HashSet<string>();
+    public HashSet<string> Exchanges { get; set; } = [];
 }

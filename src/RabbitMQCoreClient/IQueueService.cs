@@ -2,9 +2,6 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.Events;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient;
 
