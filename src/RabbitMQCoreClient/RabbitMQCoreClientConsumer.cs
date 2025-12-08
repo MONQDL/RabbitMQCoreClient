@@ -67,9 +67,12 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
             return;
 
         if (_queueService.Connection is null || !_queueService.Connection.IsOpen)
+            await _queueService.Connect();
+
+        if (_queueService.Connection is null || !_queueService.Connection.IsOpen)
             throw new NotConnectedException("Connection is not opened.");
 
-        if (_queueService.SendChannel is null || _queueService.SendChannel.IsClosed)
+        if (_queueService.PublishChannel is null || _queueService.PublishChannel.IsClosed)
             throw new NotConnectedException("Send channel is not opened.");
 
         if (!_wasSubscribed)
@@ -258,8 +261,15 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
 
     async Task StopAndClearConsumer()
     {
+        _log.LogInformation("Closing and cleaning up consumer connection and channels.");
         try
         {
+            if (_queueService != null)
+            {
+                _queueService.ReconnectedAsync -= QueueService_OnReconnected;
+                _queueService.ConnectionShutdownAsync -= QueueService_OnConnectionShutdown;
+            }
+
             if (_consumer != null)
             {
                 _consumer.ReceivedAsync -= Consumer_Received;

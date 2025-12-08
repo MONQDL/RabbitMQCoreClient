@@ -1,19 +1,34 @@
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
+using RabbitMQCoreClient;
+using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.WebApp;
 
-namespace RabbitMQCoreClient.WebApp;
+var builder = WebApplication.CreateBuilder(args);
 
-public class Program
-{
-    public static void Main(string[] args)
+// Just for sending messages.
+builder.Services
+    .AddRabbitMQCoreClient(builder.Configuration.GetSection("RabbitMQ"));
+
+// For sending and consuming messages config with subscriptions.
+builder.Services
+    .AddRabbitMQCoreClientConsumer(builder.Configuration.GetSection("RabbitMQ"))
+    .AddHandler<Handler>(["test_routing_key"], new ConsumerHandlerOptions
     {
-        CreateHostBuilder(args).Build().Run();
-    }
+        RetryKey = "test_routing_key_retry"
+    })
+    .AddHandler<Handler>(["test_routing_key_subscription"], new ConsumerHandlerOptions
+    {
+        RetryKey = "test_routing_key_retry"
+    });
+var app = builder.Build();
 
-    public static IHostBuilder CreateHostBuilder(string[] args) =>
-        Host.CreateDefaultBuilder(args)
-            .ConfigureWebHostDefaults(webBuilder =>
-            {
-                webBuilder.UseStartup<Startup>();
-            });
-}
+// Configure the HTTP request pipeline.
+
+app.MapPost("/send", async (IQueueService queueService) =>
+{
+    await queueService.SendAsync(new SimpleObj { Name = "test" }, "test_routing_key");
+    return Results.Ok();
+});
+
+app.StartRabbitMqCore(app.Lifetime);
+
+app.Run();

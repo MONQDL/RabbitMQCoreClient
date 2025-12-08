@@ -11,14 +11,14 @@ namespace RabbitMQCoreClient;
 public interface IQueueService : IAsyncDisposable
 {
     /// <summary>
-    /// RabbitMQ connection interface.
+    /// RabbitMQ connection interface. Null until first connected.
     /// </summary>
-    IConnection Connection { get; }
+    IConnection? Connection { get; }
 
     /// <summary>
-    /// A channel for sending RabbitMQ data.
+    /// A channel for sending RabbitMQ data. Null until first connected.
     /// </summary>
-    IChannel SendChannel { get; }
+    IChannel? PublishChannel { get; }
 
     /// <summary>
     /// MQ service settings.
@@ -197,4 +197,8 @@ public interface IQueueService : IAsyncDisposable
         string routingKey,
         string? exchange = default,
         bool decreaseTtl = true);
+
+    Task Connect();
+
+    Task Shutdown();
 }

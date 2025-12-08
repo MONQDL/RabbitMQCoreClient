@@ -30,10 +30,10 @@ public sealed class QueueService : IQueueService
     public RabbitMQCoreClientOptions Options { get; }
 
     /// <inheritdoc />
-    public IConnection Connection => _connection!; // So far, that's it. The property is completely initialized in the constructor.
+    public IConnection? Connection => _connection;
 
     /// <inheritdoc />
-    public IChannel SendChannel => _publishChannel!; // So far, that's it. The property is completely initialized in the constructor.
+    public IChannel? PublishChannel => _publishChannel;
 
     /// <inheritdoc />
     public event AsyncEventHandler<ReconnectEventArgs> ReconnectedAsync = default!;
@@ -63,7 +63,7 @@ public sealed class QueueService : IQueueService
     /// <summary>
     /// Connects this instance to RabbitMQ.
     /// </summary>
-    public async Task Connect()
+    async Task ConnectInternal()
     {
         // Protection against repeated calls to the `Connect()` method.
         if (_connection?.IsOpen == true)
@@ -86,6 +86,7 @@ public sealed class QueueService : IQueueService
             Port = Options.Port,
             VirtualHost = Options.VirtualHost
         };
+
         if (Options.SslEnabled)
         {
             var ssl = new SslOption
@@ -109,7 +110,7 @@ public sealed class QueueService : IQueueService
             _connection.CallbackExceptionAsync += Options.ConnectionCallbackExceptionHandler;
         _log.LogDebug("Connection opened.");
 
-        _publishChannel = await Connection.CreateChannelAsync();
+        _publishChannel = await _connection.CreateChannelAsync();
         _publishChannel.CallbackExceptionAsync += Channel_CallbackException;
         await _publishChannel.BasicQosAsync(0, Options.PrefetchCount, false); // Per consumer limit
 
@@ -126,9 +127,9 @@ public sealed class QueueService : IQueueService
     /// <summary>
     /// Close all connections and Cleans up.
     /// </summary>
-    public async Task Cleanup()
+    public async Task Shutdown()
     {
-        _log.LogInformation("Closing and cleaning up old connection and channels.");
+        _log.LogInformation("Closing and cleaning up publisher connection and channels.");
         try
         {
             if (_connection != null)
@@ -162,10 +163,15 @@ public sealed class QueueService : IQueueService
     /// <summary>
     /// Reconnects this instance to RabbitMQ.
     /// </summary>
-    async Task Reconnect()
+    public async Task Connect()
     {
-        _log.LogInformation("Reconnect requested");
-        await Cleanup();
+        if (_connection is null)
+            _log.LogInformation("Start RabbitMQ connection");
+        else
+        {
+            _log.LogInformation("RabbitMQ reconnect requested");
+            await Shutdown();
+        }
 
         // TODO: возможно нужно заменить эту конструкцию из-за Task.
         var mres = new ManualResetEventSlim(false); // state is initially false
@@ -178,7 +184,7 @@ public sealed class QueueService : IQueueService
             try
             {
                 _log.LogInformation("Trying to connect with reconnect attempt {ReconnectAttempt}", _reconnectAttemptsCount);
-                await Connect();
+                await ConnectInternal();
                 _reconnectAttemptsCount = 0;
 
                 if (ReconnectedAsync != null)
@@ -201,7 +207,7 @@ public sealed class QueueService : IQueueService
     }
 
     /// <inheritdoc />
-    public async ValueTask AsyncDispose() => await Cleanup();
+    public async ValueTask AsyncDispose() => await Shutdown();
 
     /// <inheritdoc />
     public ValueTask SendJsonAsync(
@@ -310,7 +316,7 @@ public sealed class QueueService : IQueueService
         string? exchange = default,
         bool decreaseTtl = true)
     {
-        var messages = new List<(byte[] Body, IBasicProperties Props)>();
+        var messages = new List<(ReadOnlyMemory<byte> Body, BasicProperties Props)>();
         foreach (var json in serializedJsonList)
         {
             var props = CreateBasicJsonProperties();
@@ -338,7 +344,7 @@ public sealed class QueueService : IQueueService
         string? exchange = default,
         bool decreaseTtl = true)
     {
-        var messages = new List<(ReadOnlyMemory<byte> Body, IBasicProperties Props)>();
+        var messages = new List<(ReadOnlyMemory<byte> Body, BasicProperties Props)>();
         foreach (var json in serializedJsonList)
         {
             var props = CreateBasicJsonProperties();
@@ -385,7 +391,7 @@ public sealed class QueueService : IQueueService
 
         AddTtl(props, decreaseTtl);
 
-        await SendChannel.BasicPublishAsync(exchange: exchange,
+        await _publishChannel.BasicPublishAsync(exchange: exchange,
                              routingKey: routingKey,
                              mandatory: false, // Just not reacting when no queue is subscribed for key.
                              basicProperties: props,
@@ -500,7 +506,7 @@ public sealed class QueueService : IQueueService
         if (ConnectionShutdownAsync != null)
             await ConnectionShutdownAsync.Invoke(sender ?? this, args!);
 
-        await Reconnect();
+        await Connect();
     }
 
     async Task Connection_ConnectionBlocked(object? sender, ConnectionBlockedEventArgs e)
@@ -508,7 +514,7 @@ public sealed class QueueService : IQueueService
         if (e != null)
             _log.LogError("Connection blocked! Reason: {Reason}", e.Reason);
         _connectionBlocked = true;
-        await Reconnect();
+        await Connect();
     }
     #endregion
 

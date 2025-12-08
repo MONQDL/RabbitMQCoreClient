@@ -67,7 +67,7 @@ var serviceProvider = host.Services;
 var queueService = serviceProvider.GetRequiredService<IQueueService>();
 var consumer = serviceProvider.GetRequiredService<IQueueConsumer>();
 var batchSender = serviceProvider.GetRequiredService<IQueueEventsBufferEngine>();
-consumer.Start();
+await consumer.Start();
 
 //var body = new SimpleObj { Name = "test sending" };
 //await queueService.SendAsync(body, "test_routing_key");
@@ -89,7 +89,7 @@ consumer.Start();
 //            return Task.CompletedTask;
 //        }
 //    }));
-CancellationTokenSource source = new CancellationTokenSource();
+using CancellationTokenSource source = new CancellationTokenSource();
 //await CreateSender(queueService, source.Token);
 await CreateBatchSender(batchSender, source.Token);
 
@@ -105,7 +105,7 @@ static async Task CreateSender(IQueueService queueService, CancellationToken tok
         try
         {
             await Task.Delay(1000, token);
-            var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
+            var bodyList = Enumerable.Range(1, 2).Select(x => new SimpleObj { Name = $"test sending {x}" });
             await queueService.SendBatchAsync(bodyList, "test_routing_key", SimpleObjContext.Default.SimpleObj);
         }
         catch (Exception e)
@@ -122,7 +122,7 @@ static async Task CreateBatchSender(IQueueEventsBufferEngine batchSender, Cancel
         try
         {
             await Task.Delay(500, token);
-            var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
+            var bodyList = Enumerable.Range(1, 2).Select(x => new SimpleObj { Name = $"test sending {x}" });
             await batchSender.AddEvents(bodyList, "test_routing_key");
         }
         catch (Exception e)
