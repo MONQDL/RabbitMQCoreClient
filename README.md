@@ -88,14 +88,14 @@ In order to send a message, it is enough to get the interface `RabbitMQCoreClien
 and use one of the following methods
 
 ```csharp
-ValueTask SendAsync<T>(T obj, string routingKey, string exchange = default, bool decreaseTtl = true, string correlationId = default);
-ValueTask SendJsonAsync(string json, string routingKey, string exchange = default, bool decreaseTtl = true, string correlationId = default);
-ValueTask SendAsync(byte[] obj, IBasicProperties props, string routingKey, string exchange, bool decreaseTtl = true, string correlationId = default);
+ValueTask SendAsync<T>(T obj, string routingKey, string exchange = default, bool decreaseTtl = true);
+ValueTask SendJsonAsync(string json, string routingKey, string exchange = default, bool decreaseTtl = true);
+ValueTask SendAsync(byte[] obj, IBasicProperties props, string routingKey, string exchange, bool decreaseTtl = true);
 
 // Batch sending
-ValueTask SendBatchAsync<T>(IEnumerable<T> objs, string routingKey, string exchange = default, bool decreaseTtl = true, string correlationId = default);
-ValueTask SendJsonBatchAsync(IEnumerable<string> serializedJsonList, string routingKey, string exchange = default, bool decreaseTtl = true, string correlationId = default);
-ValueTask SendBatchAsync(IEnumerable<(byte[] Body, IBasicProperties Props)> objs, string routingKey, string exchange, bool decreaseTtl = true, string correlationId = default);
+ValueTask SendBatchAsync<T>(IEnumerable<T> objs, string routingKey, string exchange = default, bool decreaseTtl = true);
+ValueTask SendJsonBatchAsync(IEnumerable<string> serializedJsonList, string routingKey, string exchange = default, bool decreaseTtl = true);
+ValueTask SendBatchAsync(IEnumerable<(byte[] Body, IBasicProperties Props)> objs, string routingKey, string exchange, bool decreaseTtl = true);
 ```
 
 In this case, if you do not specify `exchange`, then the default exchange will be used (from the configuration),

@@ -1,117 +1,117 @@
-﻿using RabbitMQ.Client;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQCoreClient.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options
+namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+
+/// <summary>
+/// Options to be applied to the message queue.
+/// </summary>
+public abstract class QueueBase
 {
-    /// <summary>
-    /// Options to be applied to the message queue.
-    /// </summary>
-    public abstract class QueueBase
+    protected QueueBase(string? name, bool durable, bool exclusive, bool autoDelete, bool useQuorum)
     {
-        protected QueueBase(string? name, bool durable, bool exclusive, bool autoDelete, bool useQuorum)
-        {
-            Name = name;
-            Durable = durable;
-            Exclusive = exclusive;
-            AutoDelete = autoDelete;
-            UseQuorum = useQuorum;
-        }
+        Name = name;
+        Durable = durable;
+        Exclusive = exclusive;
+        AutoDelete = autoDelete;
+        UseQuorum = useQuorum;
+    }
 
-        /// <summary>
-        /// The queue Name. If null, then the name will be automaticly choosen.
-        /// </summary>
-        public virtual string? Name { get; protected set; }
+    /// <summary>
+    /// The queue Name. If null, then the name will be automatically chosen.
+    /// </summary>
+    public virtual string? Name { get; protected set; }
 
-        /// <summary>
-        /// If true, the queue will be saved on disc.
-        /// </summary>
-        public virtual bool Durable { get; protected set; }
+    /// <summary>
+    /// If true, the queue will be saved on disc.
+    /// </summary>
+    public virtual bool Durable { get; protected set; }
 
-        /// <summary>
-        /// If true, then the queue will be used by single service and will be deleted after client will disconnect.
-        /// </summary>
-        public virtual bool Exclusive { get; protected set; }
+    /// <summary>
+    /// If true, then the queue will be used by single service and will be deleted after client will disconnect.
+    /// </summary>
+    public virtual bool Exclusive { get; protected set; }
 
-        /// <summary>
-        /// If true, the queue will be automaticly deleted on client disconnect.
-        /// </summary>
-        public virtual bool AutoDelete { get; protected set; }
+    /// <summary>
+    /// If true, the queue will be automatically deleted on client disconnect.
+    /// </summary>
+    public virtual bool AutoDelete { get; protected set; }
 
-        /// <summary>
-        /// The name of the exchange point that will receive messages for which a reject or nack was received.
-        /// </summary>
-        public virtual string? DeadLetterExchange { get; set; }
+    /// <summary>
+    /// The name of the exchange point that will receive messages for which a reject or nack was received.
+    /// </summary>
+    public virtual string? DeadLetterExchange { get; set; }
 
-        /// <summary>
-        /// While creating the queue use parameter "x-queue-type": "quorum".
-        /// </summary>
-        public virtual bool UseQuorum { get; set; } = false;
+    /// <summary>
+    /// While creating the queue use parameter "x-queue-type": "quorum".
+    /// </summary>
+    public virtual bool UseQuorum { get; set; } = false;
 
-        /// <summary>
-        /// List of additional parameters that will be used when initializing the queue.
-        /// </summary>
-        public virtual IDictionary<string, object> Arguments { get; set; } = new Dictionary<string, object>();
+    /// <summary>
+    /// List of additional parameters that will be used when initializing the queue.
+    /// </summary>
+    public virtual IDictionary<string, object?> Arguments { get; set; } = new Dictionary<string, object?>();
 
-        /// <summary>
-        /// ist of routing keys for the queue.
-        /// </summary>
-        public virtual HashSet<string> RoutingKeys { get; set; } = new HashSet<string>();
+    /// <summary>
+    /// ist of routing keys for the queue.
+    /// </summary>
+    public virtual HashSet<string> RoutingKeys { get; set; } = new HashSet<string>();
 
-        /// <summary>
-        /// The list of exchange points to which the queue is bound.
-        /// </summary>
-        public virtual HashSet<string> Exchanges { get; set; } = new HashSet<string>();
+    /// <summary>
+    /// The list of exchange points to which the queue is bound.
+    /// </summary>
+    public virtual HashSet<string> Exchanges { get; set; } = new HashSet<string>();
 
-        /// <summary>
-        /// Declare the queue on <see cref="Exchanges"/> and start consuming messages.
-        /// </summary>
-        /// <param name="channel"></param>
-        /// <param name="consumer"></param>
-        public virtual void StartQueue(IModel channel, AsyncEventingBasicConsumer consumer)
-        {
-            if (!string.IsNullOrWhiteSpace(DeadLetterExchange)
-                && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.DeadLetterExchangeHeader))
-                Arguments.Add(AppConstants.RabbitMQHeaders.DeadLetterExchangeHeader, DeadLetterExchange);
+    /// <summary>
+    /// Declare the queue on <see cref="Exchanges"/> and start consuming messages.
+    /// </summary>
+    /// <param name="channel"></param>
+    /// <param name="consumer"></param>
+    public virtual async Task StartQueue(IChannel channel, AsyncEventingBasicConsumer consumer)
+    {
+        if (!string.IsNullOrWhiteSpace(DeadLetterExchange)
+            && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.DeadLetterExchangeHeader))
+            Arguments.Add(AppConstants.RabbitMQHeaders.DeadLetterExchangeHeader, DeadLetterExchange);
 
-            if (UseQuorum && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.QueueTypeHeader))
-                Arguments.Add(AppConstants.RabbitMQHeaders.QueueTypeHeader, "quorum");
+        if (UseQuorum && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.QueueTypeHeader))
+            Arguments.Add(AppConstants.RabbitMQHeaders.QueueTypeHeader, "quorum");
 
-            if (UseQuorum && AutoDelete && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.QueueExpiresHeader))
-                Arguments.Add(AppConstants.RabbitMQHeaders.QueueExpiresHeader, 10000);
+        if (UseQuorum && AutoDelete && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.QueueExpiresHeader))
+            Arguments.Add(AppConstants.RabbitMQHeaders.QueueExpiresHeader, 10000);
 
-            var declaredQueue = channel.QueueDeclare(queue: Name ?? string.Empty,
-                    durable: UseQuorum || Durable,
-                    exclusive: !UseQuorum && Exclusive,
-                    autoDelete: !UseQuorum && AutoDelete,
-                    arguments: Arguments);
+        var declaredQueue = await channel.QueueDeclareAsync(queue: Name ?? string.Empty,
+                durable: UseQuorum || Durable,
+                exclusive: !UseQuorum && Exclusive,
+                autoDelete: !UseQuorum && AutoDelete,
+                arguments: Arguments);
 
-            if (declaredQueue is null)
-                throw new QueueBindException("Queue is not properly binded.");
+        if (declaredQueue is null)
+            throw new QueueBindException("Queue is not properly bind.");
 
-            if (RoutingKeys.Count > 0)
-                foreach (var exchangeName in Exchanges)
-                {
-                    BindToExchange(channel, declaredQueue, exchangeName);
-                }
+        if (RoutingKeys.Count > 0)
+            foreach (var exchangeName in Exchanges)
+            {
+                await BindToExchange(channel, declaredQueue, exchangeName);
+            }
 
-            channel.BasicConsume(queue: declaredQueue.QueueName,
-                autoAck: false,
-                consumer: consumer,
-                consumerTag: $"amq.{declaredQueue.QueueName}.{Guid.NewGuid()}"
-                );
-        }
+        await channel.BasicConsumeAsync(queue: declaredQueue.QueueName,
+            autoAck: false,
+            consumer: consumer,
+            consumerTag: $"amq.{declaredQueue.QueueName}.{Guid.NewGuid()}"
+            );
+    }
 
-        void BindToExchange(IModel channel, QueueDeclareOk declaredQueue, string exchangeName)
-        {
-            foreach (var route in RoutingKeys)
-                channel.QueueBind(
-                    queue: declaredQueue.QueueName,
-                    exchange: exchangeName,
-                    routingKey: route
-                );
-        }
+    async Task BindToExchange(IChannel channel, QueueDeclareOk declaredQueue, string exchangeName)
+    {
+        foreach (var route in RoutingKeys)
+            await channel.QueueBindAsync(
+                queue: declaredQueue.QueueName,
+                exchange: exchangeName,
+                routingKey: route
+            );
     }
 }
