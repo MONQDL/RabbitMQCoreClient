@@ -14,7 +14,7 @@ using static RabbitMQCoreClient.Configuration.AppConstants.RabbitMQHeaders;
 namespace RabbitMQCoreClient;
 
 /// <summary>
-/// Implementations of the <see cref="IQueueService" />.
+/// Implementation of the <see cref="IQueueService" />.
 /// </summary>
 /// <seealso cref="RabbitMQCoreClient.IQueueService" />
 public sealed class QueueService : IQueueService
@@ -25,6 +25,8 @@ public sealed class QueueService : IQueueService
     bool _connectionBlocked = false;
     IConnection? _connection;
     IChannel? _publishChannel;
+
+    CancellationToken _serviceLifetimeToken = default;
 
     /// <inheritdoc />
     public RabbitMQCoreClientOptions Options { get; }
@@ -101,7 +103,7 @@ public sealed class QueueService : IQueueService
             };
             factory.Ssl = ssl;
         }
-        _connection = await factory.CreateConnectionAsync();
+        _connection = await factory.CreateConnectionAsync(_serviceLifetimeToken);
 
         _connection.ConnectionShutdownAsync += Connection_ConnectionShutdown;
         _connection.ConnectionBlockedAsync += Connection_ConnectionBlocked;
@@ -110,13 +112,13 @@ public sealed class QueueService : IQueueService
             _connection.CallbackExceptionAsync += Options.ConnectionCallbackExceptionHandler;
         _log.LogDebug("Connection opened.");
 
-        _publishChannel = await _connection.CreateChannelAsync();
+        _publishChannel = await _connection.CreateChannelAsync(cancellationToken: _serviceLifetimeToken);
         _publishChannel.CallbackExceptionAsync += Channel_CallbackException;
-        await _publishChannel.BasicQosAsync(0, Options.PrefetchCount, false); // Per consumer limit
+        await _publishChannel.BasicQosAsync(0, Options.PrefetchCount, false, _serviceLifetimeToken); // Per consumer limit
 
         foreach (var exchange in _exchanges)
         {
-            await exchange.StartExchange(_publishChannel);
+            await exchange.StartExchangeAsync(_publishChannel, _serviceLifetimeToken);
         }
         _connectionBlocked = false;
 
@@ -127,7 +129,7 @@ public sealed class QueueService : IQueueService
     /// <summary>
     /// Close all connections and Cleans up.
     /// </summary>
-    public async Task Shutdown()
+    public async Task ShutdownAsync()
     {
         _log.LogInformation("Closing and cleaning up publisher connection and channels.");
         try
@@ -160,25 +162,26 @@ public sealed class QueueService : IQueueService
         }
     }
 
-    /// <summary>
-    /// Reconnects this instance to RabbitMQ.
-    /// </summary>
-    public async Task Connect()
+    /// <inheritdoc />
+    public async Task ConnectAsync(CancellationToken cancellationToken = default)
     {
+        if (cancellationToken != default)
+            _serviceLifetimeToken = cancellationToken;
+
         if (_connection is null)
             _log.LogInformation("Start RabbitMQ connection");
         else
         {
             _log.LogInformation("RabbitMQ reconnect requested");
-            await Shutdown();
+            await ShutdownAsync();
         }
 
-        // TODO: возможно нужно заменить эту конструкцию из-за Task.
-        var mres = new ManualResetEventSlim(false); // state is initially false
-
-        while (!mres.Wait(Options.ReconnectionTimeout)) // loop until state is true, checking every Options.ReconnectionTimeout
+        while (true) // loop until state is true, checking every Options.ReconnectionTimeout
         {
-            if (Options.ReconnectionAttemptsCount is not null && _reconnectAttemptsCount > Options.ReconnectionAttemptsCount)
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (Options.ReconnectionAttemptsCount is not null 
+                    && _reconnectAttemptsCount > Options.ReconnectionAttemptsCount)
                 throw new ReconnectAttemptsExceededException($"Max reconnect attempts {Options.ReconnectionAttemptsCount} reached.");
 
             try
@@ -190,24 +193,23 @@ public sealed class QueueService : IQueueService
                 if (ReconnectedAsync != null)
                     await ReconnectedAsync.Invoke(this, new ReconnectEventArgs());
 
-                break;
-                //mres.Set(); // state set to true - breaks out of loop
+                break; // state set to true - breaks out of loop
             }
             catch (Exception e)
             {
                 _reconnectAttemptsCount++;
-                await Task.Delay(Options.ReconnectionTimeout);
+                await Task.Delay(Options.ReconnectionTimeout, cancellationToken);
                 string? innerExceptionMessage = null;
                 if (e.InnerException != null)
                     innerExceptionMessage = e.InnerException.Message;
-                _log.LogCritical(e, "Connection failed. Details: {ErrorMessage}. Reconnect attempts: {ReconnectAttempt}",
-                    e.Message + innerExceptionMessage, _reconnectAttemptsCount);
+                _log.LogCritical(e, "Connection failed. Details: {ErrorMessage} Reconnect attempts: {ReconnectAttempt}",
+                    e.Message + " " + innerExceptionMessage, _reconnectAttemptsCount);
             }
         }
     }
 
     /// <inheritdoc />
-    public async ValueTask AsyncDispose() => await Shutdown();
+    public async ValueTask AsyncDispose() => await ShutdownAsync();
 
     /// <inheritdoc />
     public ValueTask SendJsonAsync(
@@ -506,7 +508,7 @@ public sealed class QueueService : IQueueService
         if (ConnectionShutdownAsync != null)
             await ConnectionShutdownAsync.Invoke(sender ?? this, args!);
 
-        await Connect();
+        await ConnectAsync();
     }
 
     async Task Connection_ConnectionBlocked(object? sender, ConnectionBlockedEventArgs e)
@@ -514,7 +516,7 @@ public sealed class QueueService : IQueueService
         if (e != null)
             _log.LogError("Connection blocked! Reason: {Reason}", e.Reason);
         _connectionBlocked = true;
-        await Connect();
+        await ConnectAsync();
     }
     #endregion
 
@@ -622,6 +624,7 @@ public sealed class QueueService : IQueueService
         }
     }
 
+    /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         if (_publishChannel != null)

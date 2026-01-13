@@ -68,7 +68,7 @@ public abstract class QueueBase
     /// </summary>
     /// <param name="channel"></param>
     /// <param name="consumer"></param>
-    public virtual async Task StartQueue(IChannel channel, AsyncEventingBasicConsumer consumer)
+    public virtual async Task StartQueueAsync(IChannel channel, AsyncEventingBasicConsumer consumer, CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(DeadLetterExchange)
             && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.DeadLetterExchangeHeader))
@@ -84,28 +84,31 @@ public abstract class QueueBase
                 durable: UseQuorum || Durable,
                 exclusive: !UseQuorum && Exclusive,
                 autoDelete: !UseQuorum && AutoDelete,
-                arguments: Arguments)
+                arguments: Arguments, 
+                cancellationToken: cancellationToken)
             ?? throw new QueueBindException("Queue is not properly bind.");
         if (RoutingKeys.Count > 0)
             foreach (var exchangeName in Exchanges)
             {
-                await BindToExchange(channel, declaredQueue, exchangeName);
+                await BindToExchangeAsync(channel, declaredQueue, exchangeName, cancellationToken);
             }
 
         await channel.BasicConsumeAsync(queue: declaredQueue.QueueName,
             autoAck: false,
             consumer: consumer,
-            consumerTag: $"amq.{declaredQueue.QueueName}.{Guid.NewGuid()}"
+            consumerTag: $"amq.{declaredQueue.QueueName}.{Guid.NewGuid()}",
+            cancellationToken: cancellationToken
             );
     }
 
-    async Task BindToExchange(IChannel channel, QueueDeclareOk declaredQueue, string exchangeName)
+    async Task BindToExchangeAsync(IChannel channel, QueueDeclareOk declaredQueue, string exchangeName, CancellationToken cancellationToken = default)
     {
         foreach (var route in RoutingKeys)
             await channel.QueueBindAsync(
                 queue: declaredQueue.QueueName,
                 exchange: exchangeName,
-                routingKey: route
+                routingKey: route,
+                cancellationToken: cancellationToken
             );
     }
 }

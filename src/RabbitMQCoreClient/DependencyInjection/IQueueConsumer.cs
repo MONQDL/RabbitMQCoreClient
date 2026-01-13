@@ -11,8 +11,9 @@ public interface IQueueConsumer : IAsyncDisposable
     /// <summary>
     /// Connect to all queues and start receiving messages.
     /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    Task Start();
+    Task Start(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Stops listening Queues.

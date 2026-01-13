@@ -38,11 +38,14 @@ public class Exchange
     /// Starts the exchange.
     /// </summary>
     /// <param name="_channel">The channel.</param>
-    public Task StartExchange(IChannel _channel) => _channel.ExchangeDeclareAsync(
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public Task StartExchangeAsync(IChannel _channel, CancellationToken cancellationToken = default) => 
+        _channel.ExchangeDeclareAsync(
             exchange: Name,
             type: Options.Type,
             durable: Options.Durable,
             autoDelete: Options.AutoDelete,
-            arguments: Options.Arguments
+            arguments: Options.Arguments,
+            cancellationToken: cancellationToken
             );
 }

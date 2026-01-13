@@ -198,7 +198,16 @@ public interface IQueueService : IAsyncDisposable
         string? exchange = default,
         bool decreaseTtl = true);
 
-    Task Connect();
+    /// <summary>
+    /// Connect to RabbitMQ server and run publisher channel.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns></returns>
+    Task ConnectAsync(CancellationToken cancellationToken = default);
 
-    Task Shutdown();
+    /// <summary>
+    /// Shutdown RabbitMQ connection.
+    /// </summary>
+    /// <returns></returns>
+    Task ShutdownAsync();
 }

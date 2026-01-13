@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using RabbitMQCoreClient;
 using RabbitMQCoreClient.Configuration.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.DependencyInjection;
 using RabbitMQCoreClient.DependencyInjection.ConfigModels;
 using RabbitMQCoreClient.Exceptions;
 
@@ -18,6 +19,8 @@ public static class BuilderExtensions
     public static IRabbitMQCoreClientBuilder AddRequiredPlatformServices(this IRabbitMQCoreClientBuilder builder)
     {
         builder.Services.TryAddSingleton<IQueueService, QueueService>();
+
+        builder.Services.AddHostedService<RabbitMQHostedService>();
 
         builder.Services.AddOptions();
         builder.Services.AddLogging();

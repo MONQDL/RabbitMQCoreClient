@@ -11,12 +11,16 @@ using System.Net;
 
 namespace RabbitMQCoreClient;
 
+/// <summary>
+/// Default RabbitMQ consumer.
+/// </summary>
 public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
 {
     readonly IQueueService _queueService;
     readonly IServiceScopeFactory _scopeFactory;
     readonly IRabbitMQCoreClientConsumerBuilder _builder;
     readonly ILogger _log;
+    CancellationToken _serviceLifetimeToken = default;
 
     /// <summary>
     /// The RabbitMQ consume messages channel.
@@ -61,13 +65,16 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
     }
 
     /// inheritdoc />
-    public async Task Start()
+    public async Task Start(CancellationToken cancellationToken = default)
     {
+        if (cancellationToken != default)
+            _serviceLifetimeToken = cancellationToken;
+
         if (_consumer != null && _consumer.IsRunning)
             return;
 
         if (_queueService.Connection is null || !_queueService.Connection.IsOpen)
-            await _queueService.Connect();
+            await _queueService.ConnectAsync(cancellationToken);
 
         if (_queueService.Connection is null || !_queueService.Connection.IsOpen)
             throw new NotConnectedException("Connection is not opened.");
@@ -82,9 +89,9 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
             _wasSubscribed = true;
         }
 
-        ConsumeChannel = await _queueService.Connection.CreateChannelAsync();
+        ConsumeChannel = await _queueService.Connection.CreateChannelAsync(cancellationToken: cancellationToken);
         ConsumeChannel.CallbackExceptionAsync += Channel_CallbackException;
-        await ConsumeChannel.BasicQosAsync(0, _queueService.Options.PrefetchCount, false); // Per consumer limit
+        await ConsumeChannel.BasicQosAsync(0, _queueService.Options.PrefetchCount, false, cancellationToken); // Per consumer limit
 
         await ConnectToAllQueues();
     }
@@ -110,7 +117,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
             // Set queue parameters from main configuration.
             if (_queueService.Options.UseQuorumQueues)
                 queue.UseQuorum = true;
-            await queue.StartQueue(ConsumeChannel, _consumer);
+            await queue.StartQueueAsync(ConsumeChannel, _consumer, _serviceLifetimeToken);
         }
         _log.LogInformation("Consumer connected to {QueuesCount} queues.", _builder.Queues.Count);
     }
@@ -129,7 +136,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
             && ttl is int ttlInt
             && ttlInt <= 0)
         {
-            await ConsumeChannel.BasicNackAsync(@event.DeliveryTag, false, false);
+            await ConsumeChannel.BasicNackAsync(@event.DeliveryTag, false, false, _serviceLifetimeToken);
             _log.LogDebug("Message was rejected due to low ttl.");
             return;
         }
@@ -161,7 +168,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
         try
         {
             await handler.HandleMessage(@event.Body, rabbitArgs);
-            await ConsumeChannel.BasicAckAsync(@event.DeliveryTag, false);
+            await ConsumeChannel.BasicAckAsync(@event.DeliveryTag, false, _serviceLifetimeToken);
             _log.LogDebug("Message successfully processed by handler type {TypeName} " +
                           "with deliveryTag={DeliveryTag}.", handler?.GetType().Name, @event.DeliveryTag);
         }
@@ -171,13 +178,13 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
             switch (handler.ErrorMessageRouter.Route)
             {
                 case Routes.DeadLetter:
-                    await ConsumeChannel.BasicNackAsync(@event.DeliveryTag, false, false);
+                    await ConsumeChannel.BasicNackAsync(@event.DeliveryTag, false, false, _serviceLifetimeToken);
                     _log.LogError(e, "Error message with deliveryTag={DeliveryTag}. " +
                         "Sent to dead letter exchange.", @event.DeliveryTag);
                     break;
                 case Routes.SourceQueue:
                     var decreaseTtl = handler.ErrorMessageRouter.TtlAction == TtlActions.Decrease;
-                    await ConsumeChannel.BasicAckAsync(@event.DeliveryTag, false);
+                    await ConsumeChannel.BasicAckAsync(@event.DeliveryTag, false, _serviceLifetimeToken);
 
                     // Forward the message back to the queue, while the TTL of the message is reduced by 1,
                     // depending on the settings of handler.ErrorMessageRouter.TtlAction.
@@ -215,7 +222,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
             .Select(x => x.DeadLetterExchange!)
             .Distinct();
 
-        // TODO: Redo the configuration of the dead message queue in the future. So far, hardcode.
+        // TODO: Rewrite the configuration of the dead message queue in the future. So far, hardcode.
         const string deadLetterQueueName = "dead_letter";
 
         // We register the queue where the "rejected" messages will be stored.
@@ -223,7 +230,8 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
                 durable: true,
                 exclusive: false,
                 autoDelete: false,
-                arguments: null);
+                arguments: null,
+                cancellationToken: _serviceLifetimeToken);
         var allRoutingKeys = _builder
             .Queues
             .SelectMany(x => x.RoutingKeys)
@@ -237,7 +245,8 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
                 type: "direct",
                 durable: true,
                 autoDelete: false,
-                arguments: null
+                arguments: null,
+                cancellationToken: _serviceLifetimeToken
                 );
 
             foreach (var route in allRoutingKeys)
@@ -245,7 +254,8 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
                     queue: deadLetterQueueName,
                     exchange: deadLetterEx,
                     routingKey: route,
-                    arguments: null
+                    arguments: null,
+                    cancellationToken: _serviceLifetimeToken
                 );
         }
     }
@@ -256,7 +266,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
             ea.RoutingKey);
 
         if (ConsumeChannel != null)
-            await ConsumeChannel.BasicNackAsync(ea.DeliveryTag, false, false);
+            await ConsumeChannel.BasicNackAsync(ea.DeliveryTag, false, false, _serviceLifetimeToken);
     }
 
     async Task StopAndClearConsumer()

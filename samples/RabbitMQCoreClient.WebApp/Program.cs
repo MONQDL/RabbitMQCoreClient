@@ -29,6 +29,4 @@ app.MapPost("/send", async (IQueueService queueService) =>
     return Results.Ok();
 });
 
-app.StartRabbitMqCore(app.Lifetime);
-
 app.Run();
