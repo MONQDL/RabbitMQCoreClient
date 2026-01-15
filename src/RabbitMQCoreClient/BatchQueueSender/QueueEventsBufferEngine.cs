@@ -157,7 +157,8 @@ public sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDisposa
             _disposedValue = true;
         }
     }
-
+    
+    /// <inheritdoc />
     public void Dispose()
     {
         // Do not change this code. Place the cleanup code in the "Dispose(bool disposing)" method.

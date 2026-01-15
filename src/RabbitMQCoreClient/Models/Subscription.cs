@@ -8,10 +8,20 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 /// </summary>
 public sealed class Subscription : QueueBase
 {
+    /// <summary>
+    /// Create new object of <see cref="Subscription"/>.
+    /// </summary>
+    /// <param name="useQuorum">If true - than the queue with <see cref="AppConstants.RabbitMQHeaders.QueueExpiresHeader"/> header 
+    /// will be created otherwise the autodelete queue will be created.</param>
     public Subscription(bool useQuorum = false)
         : base($"sub_{Guid.NewGuid()}", false, true, true, useQuorum)
     { }
 
+    /// <summary>
+    /// Create new subscription from configuration.
+    /// </summary>
+    /// <param name="queueConfig"></param>
+    /// <returns></returns>
     public static Subscription Create(SubscriptionConfig queueConfig) => new()
     {
         Arguments = queueConfig.Arguments ?? new Dictionary<string, object?>(),

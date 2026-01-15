@@ -1,5 +1,8 @@
 namespace RabbitMQCoreClient.Exceptions;
 
+/// <summary>
+/// Create new object of <see cref="QueueBindException"/>.
+/// </summary>
 public class QueueBindException : Exception
 {
     /// <summary>Initializes a new instance of the <see cref="QueueBindException"></see> class with a specified error message.</summary>

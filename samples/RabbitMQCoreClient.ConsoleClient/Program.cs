@@ -34,6 +34,7 @@ using IHost host = new HostBuilder()
         // Just for sending messages.
         services
             .AddRabbitMQCoreClient(builder.Configuration.GetSection("RabbitMQ"))
+            .AddBatchQueueSender()
             .AddSystemTextJson(x => x.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
         // For sending and consuming messages config with subscriptions.
@@ -47,8 +48,6 @@ using IHost host = new HostBuilder()
             {
                 RetryKey = "test_routing_key_retry"
             });
-
-        services.AddBatchQueueSender();
 
         // For sending and consuming messages full configuration.
         //services
@@ -91,12 +90,13 @@ await consumer.Start();
 //    }));
 using CancellationTokenSource source = new CancellationTokenSource();
 //await CreateSender(queueService, source.Token);
-await CreateBatchSender(batchSender, source.Token);
 
 //var bodyList = Enumerable.Range(1, 1).Select(x => new SimpleObj { Name = $"test sending {x}" });
 //await queueService.SendBatchAsync(bodyList, "test_routing_key", jsonSerializerSettings: new Newtonsoft.Json.JsonSerializerSettings()).AsTask();
+await CreateBatchSender(batchSender, source.Token);
 
 await host.RunAsync();
+
 
 static async Task CreateSender(IQueueService queueService, CancellationToken token)
 {

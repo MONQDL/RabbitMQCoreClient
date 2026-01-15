@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
@@ -11,8 +12,8 @@ public static class ServiceCollectionExtensions
 {
     static IServiceCollection AddBatchQueueSenderCore(this IServiceCollection services)
     {
-        services.AddTransient<IQueueEventsWriter, QueueEventsWriter>();
-        services.AddSingleton<IQueueEventsBufferEngine, QueueEventsBufferEngine>();
+        services.TryAddTransient<IQueueEventsWriter, QueueEventsWriter>();
+        services.TryAddSingleton<IQueueEventsBufferEngine, QueueEventsBufferEngine>();
         return services;
     }
 
@@ -21,17 +22,18 @@ public static class ServiceCollectionExtensions
     /// Injected service <see cref="IQueueEventsBufferEngine"/> can be used to send messages
     /// to the inmemory queue and process them at the separate thread.
     /// </summary>
-    /// <param name="services">List of services registered in DI.</param>
+    /// <param name="builder">The RabbitMQ Client builder.</param>
     /// <param name="configuration">Configuration section containing fields for configuring the message processing service.</param>
     /// <param name="setupAction">Use this method if you need to override the configuration.</param>
-    public static IServiceCollection AddBatchQueueSender(
-        this IServiceCollection services,
+    public static IRabbitMQCoreClientBuilder AddBatchQueueSender(
+        this IRabbitMQCoreClientBuilder builder,
         IConfiguration configuration,
         Action<QueueBatchSenderOptions>? setupAction = null)
     {
-        RegisterOptions(services, configuration, setupAction);
+        RegisterOptions(builder.Services, configuration, setupAction);
 
-        return services.AddBatchQueueSenderCore();
+        builder.Services.AddBatchQueueSenderCore();
+        return builder; 
     }
 
     /// <summary>
@@ -39,15 +41,17 @@ public static class ServiceCollectionExtensions
     /// Injected service <see cref="IQueueEventsBufferEngine"/> can be used to send messages
     /// to the inmemory queue and process them at the separate thread.
     /// </summary>
-    /// <param name="services">List of services registered in DI.</param>
+    /// <param name="builder">The RabbitMQ Client builder.</param>
     /// <param name="setupAction">Use this method if you need to override the configuration.</param>
     /// <returns></returns>
-    public static IServiceCollection AddBatchQueueSender(this IServiceCollection services,
+    public static IRabbitMQCoreClientBuilder AddBatchQueueSender(this IRabbitMQCoreClientBuilder builder,
         Action<QueueBatchSenderOptions>? setupAction)
     {
         if (setupAction != null)
-            services.Configure(setupAction);
-        return services.AddBatchQueueSenderCore();
+            builder.Services.Configure(setupAction);
+        builder.Services.AddBatchQueueSenderCore();
+
+        return builder;
     }
 
     /// <summary>
@@ -55,12 +59,14 @@ public static class ServiceCollectionExtensions
     /// Injected service <see cref="IQueueEventsBufferEngine"/> can be used to send messages
     /// to the inmemory queue and process them at the separate thread.
     /// </summary>
-    /// <param name="services">List of services registered in DI.</param>
+    /// <param name="builder">List of services registered in DI.</param>
     /// <returns></returns>
-    public static IServiceCollection AddBatchQueueSender(this IServiceCollection services)
+    public static IRabbitMQCoreClientBuilder AddBatchQueueSender(this IRabbitMQCoreClientBuilder builder)
     {
-        services.AddSingleton((x) => Options.Create(new QueueBatchSenderOptions()));
-        return services.AddBatchQueueSenderCore();
+        builder.Services.TryAddSingleton((x) => Options.Create(new QueueBatchSenderOptions()));
+        builder.Services.AddBatchQueueSenderCore();
+
+        return builder;
     }
 
     static void RegisterOptions(IServiceCollection services,
@@ -71,6 +77,6 @@ public static class ServiceCollectionExtensions
         setupAction?.Invoke(instance);
         var options = Options.Create(instance);
 
-        services.AddSingleton((x) => options);
+        services.TryAddSingleton((x) => options);
     }
 }

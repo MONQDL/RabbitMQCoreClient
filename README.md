@@ -1,9 +1,7 @@
 # RabbitMQ Client library for .net core applications with Dependency Injection support
 
-Library Version: v6
-
 The library allows you to quickly connect and get started with the RabbitMQ message broker.
-The library serializes and deserializes messages to JSON using _System.Text.Json_ as default or _Newtonsoft.Json_. 
+The library serializes and deserializes messages to JSON using _System.Text.Json_ as default or can use custom serializers.
 The library allows you to work with multiple queues, connected to various exchanges. It allows you to work with subscriptions.
 The library implements a custom errored messages mechanism, using the TTL and the dead message queue.
 
@@ -39,64 +37,73 @@ The library allows you to configure parameters both from the configuration file 
 }
 ```
 
-*Program.cs - console application*
-```
-class Program
+*Program.cs - simple console application*
+
+```csharp
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using RabbitMQCoreClient;
+
+Console.WriteLine("Simple console message publishing only example");
+
+var config = new ConfigurationBuilder()
+            .AddJsonFile($"appsettings.json", optional: false)
+            .AddJsonFile($"appsettings.Development.json", optional: true)
+            .Build();
+
+var services = new ServiceCollection();
+services.AddLogging();
+services.AddSingleton(LoggerFactory.Create(x =>
 {
-    static async Task Main(string[] args)
-    {
-        var config = new ConfigurationBuilder()
-                    .AddJsonFile($"appsettings.json", optional: false)
-                    .Build();
+    x.SetMinimumLevel(LogLevel.Trace);
+    x.AddConsole();
+}));
 
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddSingleton(LoggerFactory.Create(x =>
-        {
-            x.SetMinimumLevel(LogLevel.Trace);
-            x.AddConsole();
-        }));
+// Just for sending messages.
+services.AddRabbitMQCoreClient(config.GetSection("RabbitMQ"));
 
-        // Just for sending messages.
-        services
-            .AddRabbitMQCoreClient(config);
-    }
-}
-```
+var provider = services.BuildServiceProvider();
 
-*Startup.cs - ASP.NET Core application*
+var publisher = provider.GetRequiredService<IQueueService>();
+
+await publisher.ConnectAsync();
+
+await publisher.SendAsync("""{ "foo": "bar" }""", "test_key");
 
 ```
-public class Startup
+
+*Program.cs - ASP.NET Core application*
+
+```
+using RabbitMQCoreClient;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+// Just for sending messages.
+builder.Services
+    .AddRabbitMQCoreClient(builder.Configuration.GetSection("RabbitMQ"));
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+
+app.MapPost("/send", async (IQueueService publisher) =>
 {
-    public void ConfigureServices(IServiceCollection services)
-    {
-        services.AddControllers();
+    await publisher.SendAsync("""{ "foo": "bar" }""", "test_key");
+    return Results.Ok();
+});
 
-        ...
-
-        // Just for sending messages.
-        services
-            .AddRabbitMQCoreClient(config);
-    }
-}
+app.Run();
 ```
+
+More examples can be found at `samples` folder in this repository.
 
 The `RabbitMQCoreClient.IQueueService` interface is responsible for sending messages.
 
 In order to send a message, it is enough to get the interface `RabbitMQCoreClient.IQueueService` from DI
-and use one of the following methods
-
-```csharp
-ValueTask SendAsync<T>(T obj, string routingKey, string exchange = default, bool decreaseTtl = true);
-ValueTask SendJsonAsync(string json, string routingKey, string exchange = default, bool decreaseTtl = true);
-ValueTask SendAsync(byte[] obj, IBasicProperties props, string routingKey, string exchange, bool decreaseTtl = true);
-
-// Batch sending
-ValueTask SendBatchAsync<T>(IEnumerable<T> objs, string routingKey, string exchange = default, bool decreaseTtl = true);
-ValueTask SendJsonBatchAsync(IEnumerable<string> serializedJsonList, string routingKey, string exchange = default, bool decreaseTtl = true);
-ValueTask SendBatchAsync(IEnumerable<(byte[] Body, IBasicProperties Props)> objs, string routingKey, string exchange, bool decreaseTtl = true);
-```
+and use one of the methods of `SendAsync` or `SendBatchAsync`.
 
 In this case, if you do not specify `exchange`, then the default exchange will be used (from the configuration),
 if configured, otherwise you need to explicitly specify the `exchange` parameter.
@@ -108,7 +115,7 @@ Each time a message is re-sending to the queue, for example, due to an exception
 The message will be sent to the dead message queue if the TTL drops to 0.
 
 If you set the parameter `decreaseTtl = false` in the `SendAsync` methods, then the TTL will not be reduced accordingly, 
-which can lead to an endless message processing cycle.
+which can lead to an endless message processing cycle. `decreaseTtl` only can be used in methods with `BasicProperties` argument.
 
 The default TTL setting can be defined in the configuration (see the Configuration section).
 
@@ -128,6 +135,7 @@ await queueService.SendBatchAsync(bodyList, "test_routing_key");
 ```
 
 #### Buffer messages in memory and send them at separate thread
+
 From the version v5.1.0 there was introduced a new mechanic of the sending messages using separate thread. 
 You can use this feature when you have to send many parallel small messages to the queue (for example from the ASP.NET requests).
 The feature allows you to buffer that messages at the in-memory list and flush them at once using the `SendBatchAsync` method.
@@ -532,6 +540,7 @@ class Program
 ```
 
 #### Quorum queues at cluster environment
+
 Started from v5.1.0 you can set option `"UseQuorumQueues": true` at root configuration level 
 and `"UseQuorum": true` at queue configuration level. This option adds argument `"x-queue-type": "quorum"` on queue declaration
 and can be used at the configured cluster environment.

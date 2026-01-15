@@ -1,6 +1,9 @@
 namespace RabbitMQCoreClient.Exceptions;
 
-public class ClientConfigurationException : Exception
+/// <summary>
+/// Create new object of <see cref="ClientConfigurationException"/>.
+/// </summary>
+public sealed class ClientConfigurationException : Exception
 {
     /// <summary>Initializes a new instance of the <see cref="ClientConfigurationException"></see> class with a specified error message.</summary>
     /// <param name="message">The message that describes the error.</param>

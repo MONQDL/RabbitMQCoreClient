@@ -2,28 +2,36 @@ using System.Text.Json.Serialization;
 
 namespace RabbitMQCoreClient.Serializers;
 
+/// <summary>
+/// System.Text.Json message serializer.
+/// </summary>
 public class SystemTextJsonMessageSerializer : IMessageSerializer
 {
-    static readonly System.Text.Json.JsonSerializerOptions _defaultOptions = new System.Text.Json.JsonSerializerOptions
-    {
-        PropertyNameCaseInsensitive = true,
-        DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
-    };
+    /// <summary>
+    /// Default serialization options.
+    /// </summary>
+    public static System.Text.Json.JsonSerializerOptions DefaultOptions { get; } =
+        new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            Converters = { new JsonStringEnumConverter() }
+        };
 
-    public static System.Text.Json.JsonSerializerOptions DefaultOptions => _defaultOptions;
-
-    static SystemTextJsonMessageSerializer()
-    {
-        _defaultOptions.Converters.Add(new JsonStringEnumConverter());
-    }
-
+    /// <summary>
+    /// Current serialization options.
+    /// </summary>
     public System.Text.Json.JsonSerializerOptions Options { get; }
 
+    /// <summary>
+    /// Creates new object of <see cref="SystemTextJsonMessageSerializer"/>.
+    /// </summary>
+    /// <param name="setupAction">Setup parameters.</param>
     public SystemTextJsonMessageSerializer(Action<System.Text.Json.JsonSerializerOptions>? setupAction = null)
     {
         if (setupAction is null)
         {
-            Options = _defaultOptions;
+            Options = DefaultOptions;
         }
         else
         {

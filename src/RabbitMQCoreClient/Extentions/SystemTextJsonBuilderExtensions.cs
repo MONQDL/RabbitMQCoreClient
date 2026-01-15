@@ -3,7 +3,10 @@ using System.Text.Json;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
-public static class SystemTextJsonBuilderExtentions
+/// <summary>
+/// RabbitMQClient builder extensions for System.Text.Json serializer support.
+/// </summary>
+public static class SystemTextJsonBuilderExtensions
 {
     /// <summary>
     /// Use System.Text.Json serializer as default serializer for the RabbitMQ messages.

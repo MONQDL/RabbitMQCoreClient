@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.3.32929.385
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11312.210
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F06C16D8-3CB0-45C7-BC44-EDB4EE4EDBA7}"
 EndProject
@@ -11,6 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LICENSE = LICENSE
 		.github\workflows\netcorelibrary.yml = .github\workflows\netcorelibrary.yml
 		README.md = README.md
+		v7-MIGRATION.md = v7-MIGRATION.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQCoreClient", "src\RabbitMQCoreClient\RabbitMQCoreClient.csproj", "{CE80F1BF-A85A-4282-B461-174A086985F5}"
@@ -22,6 +23,16 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{1393D7D2-3B09-49BF-A616-B25D1365E58B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQCoreClient.WebApp", "samples\RabbitMQCoreClient.WebApp\RabbitMQCoreClient.WebApp.csproj", "{E2A1AB4C-6E1E-455B-A713-4EE5D60C1A6B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "publish", "publish", "{8C256A46-AE61-4D61-A221-F94741C36310}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "consume", "consume", "{A778C338-849C-4472-AD4A-174298FA492A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleConsole", "samples\publish\SimpleConsole\SimpleConsole.csproj", "{656DAD79-76E8-4E5D-8C29-3BC6CAF75731}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HostConsole", "samples\publish\HostConsole\HostConsole.csproj", "{7BBECA17-DCDD-469C-ACE6-E227360EA257}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApp", "samples\publish\WebApp\WebApp.csproj", "{E9E078E3-7167-4C11-807E-00324D513C22}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,6 +56,18 @@ Global
 		{E2A1AB4C-6E1E-455B-A713-4EE5D60C1A6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E2A1AB4C-6E1E-455B-A713-4EE5D60C1A6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E2A1AB4C-6E1E-455B-A713-4EE5D60C1A6B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{656DAD79-76E8-4E5D-8C29-3BC6CAF75731}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{656DAD79-76E8-4E5D-8C29-3BC6CAF75731}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{656DAD79-76E8-4E5D-8C29-3BC6CAF75731}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{656DAD79-76E8-4E5D-8C29-3BC6CAF75731}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BBECA17-DCDD-469C-ACE6-E227360EA257}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BBECA17-DCDD-469C-ACE6-E227360EA257}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BBECA17-DCDD-469C-ACE6-E227360EA257}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BBECA17-DCDD-469C-ACE6-E227360EA257}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9E078E3-7167-4C11-807E-00324D513C22}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9E078E3-7167-4C11-807E-00324D513C22}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9E078E3-7167-4C11-807E-00324D513C22}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9E078E3-7167-4C11-807E-00324D513C22}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -54,6 +77,11 @@ Global
 		{B35BE626-60CC-4EAC-90FB-422885DC3506} = {F06C16D8-3CB0-45C7-BC44-EDB4EE4EDBA7}
 		{5925B853-0BC5-48D8-86DE-43943E5943D3} = {1393D7D2-3B09-49BF-A616-B25D1365E58B}
 		{E2A1AB4C-6E1E-455B-A713-4EE5D60C1A6B} = {1393D7D2-3B09-49BF-A616-B25D1365E58B}
+		{8C256A46-AE61-4D61-A221-F94741C36310} = {1393D7D2-3B09-49BF-A616-B25D1365E58B}
+		{A778C338-849C-4472-AD4A-174298FA492A} = {1393D7D2-3B09-49BF-A616-B25D1365E58B}
+		{656DAD79-76E8-4E5D-8C29-3BC6CAF75731} = {8C256A46-AE61-4D61-A221-F94741C36310}
+		{7BBECA17-DCDD-469C-ACE6-E227360EA257} = {8C256A46-AE61-4D61-A221-F94741C36310}
+		{E9E078E3-7167-4C11-807E-00324D513C22} = {8C256A46-AE61-4D61-A221-F94741C36310}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4CC19D97-DE19-4541-802F-F841284C47C7}

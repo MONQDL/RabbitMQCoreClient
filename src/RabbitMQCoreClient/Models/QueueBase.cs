@@ -9,6 +9,15 @@ namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 /// </summary>
 public abstract class QueueBase
 {
+    /// <summary>
+    /// Create new object of <see cref="QueueBase"/>.
+    /// </summary>
+    /// <param name="name">The queue Name. If null, then the name will be automatically chosen.</param>
+    /// <param name="durable">If true, the queue will be saved on disc.</param>
+    /// <param name="exclusive">If true, then the queue will be used by single service and will be deleted after client will disconnect.
+    /// Except <see cref="UseQuorum"/> is true. Then the queue will be created with be created with header <see cref="AppConstants.RabbitMQHeaders.QueueExpiresHeader"/></param>
+    /// <param name="autoDelete">If true, the queue will be automatically deleted on client disconnect.</param>
+    /// <param name="useQuorum">While creating the queue use parameter "x-queue-type": "quorum".</param>
     protected QueueBase(string? name, bool durable, bool exclusive, bool autoDelete, bool useQuorum)
     {
         Name = name;
@@ -30,6 +39,7 @@ public abstract class QueueBase
 
     /// <summary>
     /// If true, then the queue will be used by single service and will be deleted after client will disconnect.
+    /// Except <see cref="UseQuorum"/> is true. Then the queue will be created with be created with header <see cref="AppConstants.RabbitMQHeaders.QueueExpiresHeader"/>
     /// </summary>
     public virtual bool Exclusive { get; protected set; }
 
@@ -66,9 +76,9 @@ public abstract class QueueBase
     /// <summary>
     /// Declare the queue on <see cref="Exchanges"/> and start consuming messages.
     /// </summary>
-    /// <param name="channel"></param>
-    /// <param name="consumer"></param>
-    public virtual async Task StartQueueAsync(IChannel channel, AsyncEventingBasicConsumer consumer, CancellationToken cancellationToken = default)
+    public virtual async Task StartQueueAsync(IChannel channel, 
+        AsyncEventingBasicConsumer consumer, 
+        CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(DeadLetterExchange)
             && !Arguments.ContainsKey(AppConstants.RabbitMQHeaders.DeadLetterExchangeHeader))

@@ -3,6 +3,9 @@ using RabbitMQCoreClient.Serializers;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
+/// <summary>
+/// RabbitMQCoreClient builder.
+/// </summary>
 public interface IRabbitMQCoreClientBuilder
 {
     /// <summary>
@@ -21,7 +24,7 @@ public interface IRabbitMQCoreClientBuilder
     Exchange? DefaultExchange { get; }
 
     /// <summary>
-    /// The default JSON serializer.
+    /// The default message serializer.
     /// </summary>
     IMessageSerializer? Serializer { get; set; }
 }

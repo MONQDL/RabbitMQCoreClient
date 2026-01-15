@@ -21,7 +21,6 @@ public sealed class QueueService : IQueueService
 {
     readonly ILogger<QueueService> _log;
     readonly IList<Exchange> _exchanges;
-    readonly IMessageSerializer _serializer;
     bool _connectionBlocked = false;
     IConnection? _connection;
     IChannel? _publishChannel;
@@ -30,6 +29,9 @@ public sealed class QueueService : IQueueService
 
     /// <inheritdoc />
     public RabbitMQCoreClientOptions Options { get; }
+
+    /// <inheritdoc />
+    public IMessageSerializer Serializer { get; }
 
     /// <inheritdoc />
     public IConnection? Connection => _connection;
@@ -59,7 +61,7 @@ public sealed class QueueService : IQueueService
         Options = options ?? throw new ArgumentNullException(nameof(options), $"{nameof(options)} is null.");
         _log = loggerFactory.CreateLogger<QueueService>();
         _exchanges = builder.Exchanges;
-        _serializer = builder.Serializer ?? new SystemTextJsonMessageSerializer();
+        Serializer = builder.Serializer ?? new SystemTextJsonMessageSerializer();
     }
 
     /// <summary>
@@ -74,7 +76,7 @@ public sealed class QueueService : IQueueService
             return;
         }
 
-        _log.LogInformation("Connecting to RabbitMQ endpoint {HostName}.", Options.HostName);
+        _log.LogInformation("Connecting to RabbitMQ endpoint '{HostName}'.", Options.HostName);
 
         var factory = new ConnectionFactory
         {
@@ -123,7 +125,7 @@ public sealed class QueueService : IQueueService
         _connectionBlocked = false;
 
         CheckSendChannelOpened();
-        _log.LogInformation("Connected to RabbitMQ endpoint {HostName}", Options.HostName);
+        _log.LogInformation("Connected to RabbitMQ endpoint '{HostName}'", Options.HostName);
     }
 
     /// <summary>
@@ -180,13 +182,13 @@ public sealed class QueueService : IQueueService
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (Options.ReconnectionAttemptsCount is not null 
+            if (Options.ReconnectionAttemptsCount is not null
                     && _reconnectAttemptsCount > Options.ReconnectionAttemptsCount)
-                throw new ReconnectAttemptsExceededException($"Max reconnect attempts {Options.ReconnectionAttemptsCount} reached.");
+                throw new ReconnectAttemptsExceededException($"Max reconnect attempts '{Options.ReconnectionAttemptsCount}' reached.");
 
             try
             {
-                _log.LogInformation("Trying to connect with reconnect attempt {ReconnectAttempt}", _reconnectAttemptsCount);
+                _log.LogInformation("Trying to connect with reconnect attempt '{ReconnectAttempt}'", _reconnectAttemptsCount);
                 await ConnectInternal();
                 _reconnectAttemptsCount = 0;
 
@@ -202,7 +204,7 @@ public sealed class QueueService : IQueueService
                 string? innerExceptionMessage = null;
                 if (e.InnerException != null)
                     innerExceptionMessage = e.InnerException.Message;
-                _log.LogCritical(e, "Connection failed. Details: {ErrorMessage} Reconnect attempts: {ReconnectAttempt}",
+                _log.LogCritical(e, "Connection failed. Details: '{ErrorMessage}' Reconnect attempts: '{ReconnectAttempt}'",
                     e.Message + " " + innerExceptionMessage, _reconnectAttemptsCount);
             }
         }
@@ -211,162 +213,7 @@ public sealed class QueueService : IQueueService
     /// <inheritdoc />
     public async ValueTask AsyncDispose() => await ShutdownAsync();
 
-    /// <inheritdoc />
-    public ValueTask SendJsonAsync(
-        string json,
-        string routingKey,
-        string? exchange = default,
-        bool decreaseTtl = true)
-    {
-        if (string.IsNullOrEmpty(json))
-            throw new ArgumentException($"{nameof(json)} is null or empty.", nameof(json));
-
-        var body = Encoding.UTF8.GetBytes(json);
-        var properties = CreateBasicJsonProperties();
-
-        _log.LogDebug("Sending json message {Message} to exchange {Exchange} " +
-            "with routing key {RoutingKey}.", json, exchange, routingKey);
-
-        return SendAsync(body,
-            props: properties,
-            exchange: exchange,
-            routingKey: routingKey,
-            decreaseTtl: decreaseTtl
-            );
-    }
-
-    /// <inheritdoc />
-    public ValueTask SendJsonAsync(
-        ReadOnlyMemory<byte> jsonBytes,
-        string routingKey,
-        string? exchange = default,
-        bool decreaseTtl = true)
-    {
-        if (jsonBytes.Length == 0)
-            throw new ArgumentException($"{nameof(jsonBytes)} is null or empty.", nameof(jsonBytes));
-
-        var properties = CreateBasicJsonProperties();
-
-        _log.LogDebug("Sending json message to exchange {Exchange} " +
-            "with routing key {RoutingKey}.", exchange, routingKey);
-
-        return SendAsync(jsonBytes,
-            props: properties,
-            exchange: exchange,
-            routingKey: routingKey,
-            decreaseTtl: decreaseTtl
-            );
-    }
-
-    /// <inheritdoc />
-    public ValueTask SendAsync<T>(
-        T obj,
-        string routingKey,
-        string? exchange = default,
-        bool decreaseTtl = true
-        )
-    {
-        // Проверка на Null без боксинга. // https://stackoverflow.com/a/864860
-        if (EqualityComparer<T>.Default.Equals(obj, default))
-            throw new ArgumentNullException(nameof(obj));
-
-        var serializedObj = _serializer.Serialize(obj);
-        return SendJsonAsync(
-                    serializedObj,
-                    exchange: exchange,
-                    routingKey: routingKey,
-                    decreaseTtl: decreaseTtl
-                   );
-    }
-
-    /// <inheritdoc />
-    public ValueTask SendAsync(
-        byte[] obj,
-        BasicProperties props,
-        string routingKey,
-        string? exchange = default,
-        bool decreaseTtl = true) => SendAsync(new ReadOnlyMemory<byte>(obj),
-            props: props,
-            exchange: exchange,
-            routingKey: routingKey,
-            decreaseTtl: decreaseTtl
-            );
-
-    /// <inheritdoc />
-    public ValueTask SendBatchAsync<T>(
-        IEnumerable<T> objs,
-        string routingKey,
-        string? exchange = default,
-        bool decreaseTtl = true)
-    {
-        var messages = new List<ReadOnlyMemory<byte>>();
-        foreach (var obj in objs)
-            messages.Add(_serializer.Serialize(obj));
-
-        return SendJsonBatchAsync(
-            serializedJsonList: messages,
-            exchange: exchange,
-            routingKey: routingKey,
-            decreaseTtl: decreaseTtl
-        );
-    }
-
-    /// <inheritdoc />
-    public ValueTask SendJsonBatchAsync(
-        IEnumerable<string> serializedJsonList,
-        string routingKey,
-        string? exchange = default,
-        bool decreaseTtl = true)
-    {
-        var messages = new List<(ReadOnlyMemory<byte> Body, BasicProperties Props)>();
-        foreach (var json in serializedJsonList)
-        {
-            var props = CreateBasicJsonProperties();
-            AddTtl(props, decreaseTtl);
-
-            var body = Encoding.UTF8.GetBytes(json);
-            messages.Add((body, props));
-        }
-
-        _log.LogDebug("Sending json messages batch to exchange {Exchange} " +
-            "with routing key {RoutingKey}.", exchange, routingKey);
-
-        return SendBatchAsync(
-            objs: messages,
-            exchange: exchange,
-            routingKey: routingKey,
-            decreaseTtl: decreaseTtl
-        );
-    }
-
-    /// <inheritdoc />
-    public ValueTask SendJsonBatchAsync(
-        IEnumerable<ReadOnlyMemory<byte>> serializedJsonList,
-        string routingKey,
-        string? exchange = default,
-        bool decreaseTtl = true)
-    {
-        var messages = new List<(ReadOnlyMemory<byte> Body, BasicProperties Props)>();
-        foreach (var json in serializedJsonList)
-        {
-            var props = CreateBasicJsonProperties();
-            AddTtl(props, decreaseTtl);
-
-            messages.Add((json, props));
-        }
-
-        _log.LogDebug("Sending json messages batch to exchange {Exchange} " +
-            "with routing key {RoutingKey}.", exchange, routingKey);
-
-        return SendBatchAsync(
-            objs: messages,
-            exchange: exchange,
-            routingKey: routingKey,
-            decreaseTtl: decreaseTtl
-        );
-    }
-
-    #region Base Publish methods
+    #region Publish Single methods
 
     /// <inheritdoc />
     public async ValueTask SendAsync(
@@ -374,8 +221,12 @@ public sealed class QueueService : IQueueService
         BasicProperties props,
         string routingKey,
         string? exchange = default,
-        bool decreaseTtl = true)
+        bool decreaseTtl = true,
+        CancellationToken cancellationToken = default)
     {
+        if (obj.Length == 0)
+            throw new ArgumentException($"{nameof(obj)} is null or empty.", nameof(obj));
+
         if (string.IsNullOrEmpty(exchange))
             exchange = GetDefaultExchange();
 
@@ -385,8 +236,8 @@ public sealed class QueueService : IQueueService
         if (obj.Length > Options.MaxBodySize)
         {
             var decodedString = DecodeMessageAsString(obj);
-            throw new BadMessageException($"The message size \"{obj.Length}\" exceeds max body limit of \"{Options.MaxBodySize}\" " +
-                $"on routing key \"{routingKey}\" (exchange: \"{exchange}\"). Decoded message part: {decodedString}");
+            throw new BadMessageException($"The message size '{obj.Length}' exceeds max body limit of '{Options.MaxBodySize}' " +
+                $"on routing key '{routingKey}' (exchange: '{exchange}'). Decoded message part: {decodedString}");
         }
 
         CheckSendChannelOpened();
@@ -398,16 +249,21 @@ public sealed class QueueService : IQueueService
                              mandatory: false, // Just not reacting when no queue is subscribed for key.
                              basicProperties: props,
                              body: obj);
-        _log.LogDebug("Sent raw message to exchange {Exchange} with routing key {RoutingKey}.",
+        _log.LogDebug("Sent raw message to exchange '{Exchange}' with routing key '{RoutingKey}'.",
             exchange, routingKey);
     }
+
+    #endregion
+
+    #region Publish Batch methods
 
     /// <inheritdoc />
     public async ValueTask SendBatchAsync(
         IEnumerable<(ReadOnlyMemory<byte> Body, BasicProperties Props)> objs,
         string routingKey,
         string? exchange = default,
-        bool decreaseTtl = true)
+        bool decreaseTtl = true,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(exchange))
             exchange = GetDefaultExchange();
@@ -446,7 +302,8 @@ public sealed class QueueService : IQueueService
                 routingKey: routingKey,
                 body: body,
                 mandatory: false, // Just not reacting when no queue is subscribed for key.
-                basicProperties: props);
+                basicProperties: props,
+                cancellationToken: cancellationToken);
             publishTasks.Add(publishTask);
 
             await MaybeAwaitPublishes(publishTasks, batchSize);
@@ -456,8 +313,68 @@ public sealed class QueueService : IQueueService
         // evenly divisible by batch size.
         await MaybeAwaitPublishes(publishTasks, 0);
 
-        _log.LogDebug("Sent raw messages batch to exchange {Exchange} " +
-            "with routing key {RoutingKey}.", exchange, routingKey);
+        _log.LogDebug("Sent raw messages batch to exchange '{Exchange}' " +
+            "with routing key '{RoutingKey}'.", exchange, routingKey);
+    }
+
+    /// <inheritdoc />
+    public async ValueTask SendBatchAsync(
+        IEnumerable<ReadOnlyMemory<byte>> objs,
+        BasicProperties props,
+        string routingKey,
+        string? exchange = default,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(exchange))
+            exchange = GetDefaultExchange();
+
+        if (string.IsNullOrEmpty(exchange))
+            throw new ArgumentException($"{nameof(exchange)} is null or empty.", nameof(exchange));
+
+        CheckSendChannelOpened();
+
+        const ushort MAX_OUTSTANDING_CONFIRMS = 256;
+
+        var batchSize = Math.Max(1, MAX_OUTSTANDING_CONFIRMS / 2);
+
+        var publishTasks = new List<ValueTask>();
+
+        AddTtl(props, false);
+
+        foreach (var body in objs)
+        {
+            if (body.Length > Options.MaxBodySize)
+            {
+                var decodedString = DecodeMessageAsString(body);
+
+                _log.LogError("Skipped message due to message size '{MessageSize}' exceeds max body limit of '{MaxBodySize}' " +
+                    "on routing key '{RoutingKey}' (exchange: '{Exchange}'. Decoded message part: {DecodedString})",
+                    body.Length,
+                    Options.MaxBodySize,
+                    routingKey,
+                    exchange,
+                    decodedString);
+                continue;
+            }
+
+            var publishTask = _publishChannel.BasicPublishAsync(
+                exchange: exchange,
+                routingKey: routingKey,
+                body: body,
+                mandatory: false, // Just not reacting when no queue is subscribed for key.
+                basicProperties: props,
+                cancellationToken: cancellationToken);
+            publishTasks.Add(publishTask);
+
+            await MaybeAwaitPublishes(publishTasks, batchSize);
+        }
+
+        // Await any remaining tasks in case message count was not
+        // evenly divisible by batch size.
+        await MaybeAwaitPublishes(publishTasks, 0);
+
+        _log.LogDebug("Sent raw messages batch to exchange '{Exchange}' " +
+            "with routing key '{RoutingKey}'.", exchange, routingKey);
     }
 
     async Task MaybeAwaitPublishes(List<ValueTask> publishTasks, int batchSize)
@@ -520,12 +437,15 @@ public sealed class QueueService : IQueueService
     }
     #endregion
 
-    static BasicProperties CreateBasicJsonProperties()
+    /// <summary>
+    /// Creates a <see cref="BasicProperties"/> object with Persistent = true.
+    /// </summary>
+    /// <returns></returns>
+    public static BasicProperties CreateDefaultProperties()
     {
         var properties = new BasicProperties
         {
-            Persistent = true,
-            ContentType = "application/json"
+            Persistent = true
         };
         return properties;
     }

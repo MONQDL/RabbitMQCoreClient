@@ -1,5 +1,8 @@
 namespace RabbitMQCoreClient.Exceptions;
 
+/// <summary>
+/// Create new object of <see cref="ReconnectAttemptsExceededException"/>.
+/// </summary>
 public class ReconnectAttemptsExceededException : Exception
 {
     /// <summary>Initializes a new instance of the <see cref="NotConnectedException" /> class with a specified error message.</summary>

@@ -1,5 +1,8 @@
 namespace RabbitMQCoreClient.Models;
 
+/// <summary>
+/// Errored messages processing types.
+/// </summary>
 public enum Routes
 {
     /// <summary>

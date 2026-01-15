@@ -2,6 +2,9 @@ using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
+/// <summary>
+/// Consumer builder interface.
+/// </summary>
 public interface IRabbitMQCoreClientConsumerBuilder
 {
     /// <summary>

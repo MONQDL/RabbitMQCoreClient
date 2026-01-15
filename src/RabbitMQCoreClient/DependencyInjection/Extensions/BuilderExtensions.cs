@@ -10,6 +10,9 @@ using RabbitMQCoreClient.Exceptions;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
+/// <summary>
+/// <see cref="IRabbitMQCoreClientBuilder"/> extension methods.
+/// </summary>
 public static class BuilderExtensions
 {
     /// <summary>
