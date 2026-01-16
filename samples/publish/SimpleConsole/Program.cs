@@ -2,7 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQCoreClient;
-using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+using RabbitMQCoreClient.DependencyInjection;
 
 Console.WriteLine("Simple console message publishing only example");
 

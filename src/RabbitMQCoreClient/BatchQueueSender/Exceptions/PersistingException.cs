@@ -1,11 +1,14 @@
 namespace RabbitMQCoreClient.BatchQueueSender.Exceptions;
 
-public class PersistingException : Exception
+/// <summary>
+/// Create new object of <see cref="PersistingException"/>.
+/// </summary>
+public sealed class PersistingException : Exception
 {
     /// <summary>
     /// The data items.
     /// </summary>
-    public object[] Items { get; }
+    public IEnumerable<EventItem> Items { get; }
 
     /// <summary>
     /// The routing key of the queue bus.
@@ -23,7 +26,7 @@ public class PersistingException : Exception
     /// <param name="routingKey">The routing key of the queue bus.</param>
     /// </param>
     public PersistingException(string message,
-        object[] items,
+        IEnumerable<EventItem> items,
         string routingKey,
         Exception innerException) : base(message, innerException)
     {

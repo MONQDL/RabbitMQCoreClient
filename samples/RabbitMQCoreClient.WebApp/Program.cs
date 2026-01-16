@@ -1,5 +1,5 @@
 using RabbitMQCoreClient;
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.DependencyInjection;
 using RabbitMQCoreClient.WebApp;
 
 var builder = WebApplication.CreateBuilder(args);

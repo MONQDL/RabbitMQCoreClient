@@ -1,7 +1,8 @@
+using Microsoft.Extensions.DependencyInjection;
 using RabbitMQCoreClient.Serializers;
 using System.Text.Json;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace RabbitMQCoreClient.DependencyInjection;
 
 /// <summary>
 /// RabbitMQClient builder extensions for System.Text.Json serializer support.

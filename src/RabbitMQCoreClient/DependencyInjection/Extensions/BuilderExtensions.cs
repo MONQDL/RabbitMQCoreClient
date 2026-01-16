@@ -1,14 +1,12 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using RabbitMQCoreClient;
 using RabbitMQCoreClient.Configuration.DependencyInjection;
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
-using RabbitMQCoreClient.DependencyInjection;
-using RabbitMQCoreClient.DependencyInjection.ConfigModels;
 using RabbitMQCoreClient.Exceptions;
+using RabbitMQCoreClient.Models;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace RabbitMQCoreClient.DependencyInjection;
 
 /// <summary>
 /// <see cref="IRabbitMQCoreClientBuilder"/> extension methods.

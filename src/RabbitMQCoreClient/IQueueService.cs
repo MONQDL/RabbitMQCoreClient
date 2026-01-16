@@ -1,6 +1,6 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.DependencyInjection;
 using RabbitMQCoreClient.Events;
 using RabbitMQCoreClient.Serializers;
 

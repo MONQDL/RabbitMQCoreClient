@@ -1,4 +1,4 @@
-using RabbitMQCoreClient.Configuration.DependencyInjection;
+using RabbitMQCoreClient.Models;
 using RabbitMQCoreClient.Serializers;
 
 namespace Microsoft.Extensions.DependencyInjection;

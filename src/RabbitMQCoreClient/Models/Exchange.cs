@@ -1,7 +1,7 @@
 using RabbitMQ.Client;
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.DependencyInjection;
 
-namespace RabbitMQCoreClient.Configuration.DependencyInjection;
+namespace RabbitMQCoreClient.Models;
 
 /// <summary>
 /// The RabbitMQ Exchange
@@ -39,7 +39,7 @@ public class Exchange
     /// </summary>
     /// <param name="_channel">The channel.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public Task StartExchangeAsync(IChannel _channel, CancellationToken cancellationToken = default) => 
+    public Task StartExchangeAsync(IChannel _channel, CancellationToken cancellationToken = default) =>
         _channel.ExchangeDeclareAsync(
             exchange: Name,
             type: Options.Type,

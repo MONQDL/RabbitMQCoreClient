@@ -4,9 +4,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RabbitMQCoreClient;
 using RabbitMQCoreClient.BatchQueueSender;
-using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.ConsoleClient;
+using RabbitMQCoreClient.DependencyInjection;
 using System;
 using System.Linq;
 using System.Text;
@@ -123,7 +122,7 @@ static async Task CreateBatchSender(IQueueEventsBufferEngine batchSender, Cancel
         {
             await Task.Delay(500, token);
             var bodyList = Enumerable.Range(1, 2).Select(x => new SimpleObj { Name = $"test sending {x}" });
-            await batchSender.AddEvents(bodyList, "test_routing_key");
+            batchSender.AddEvents(bodyList, "test_routing_key");
         }
         catch (Exception e)
         {

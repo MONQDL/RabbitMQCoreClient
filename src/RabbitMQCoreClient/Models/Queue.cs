@@ -1,6 +1,6 @@
-using RabbitMQCoreClient.DependencyInjection.ConfigModels;
+using RabbitMQCoreClient.DependencyInjection;
 
-namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+namespace RabbitMQCoreClient.Models;
 
 /// <summary>
 /// Simple custom message queue.

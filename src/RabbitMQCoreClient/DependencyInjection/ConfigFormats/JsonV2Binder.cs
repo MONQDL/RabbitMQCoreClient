@@ -1,14 +1,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
-using RabbitMQCoreClient.DependencyInjection.ConfigModels;
 using RabbitMQCoreClient.Exceptions;
+using RabbitMQCoreClient.Models;
 
 namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats;
 
 public static class JsonV2Binder
 {
-    const string ExhangesSection = "Exchanges";
+    const string ExchangesSection = "Exchanges";
     const string QueuesSection = "Queues";
     const string SubscriptionsSection = "Subscriptions";
 
@@ -26,7 +25,7 @@ public static class JsonV2Binder
 
     static void RegisterExchanges(IRabbitMQCoreClientBuilder builder, IConfiguration configuration)
     {
-        var exchanges = configuration.GetSection(ExhangesSection);
+        var exchanges = configuration.GetSection(ExchangesSection);
         foreach (var exchangeConfig in exchanges.GetChildren())
         {
             var options = new ExchangeOptions();

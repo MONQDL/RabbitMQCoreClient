@@ -1,4 +1,4 @@
-namespace RabbitMQCoreClient.BatchQueueSender;
+namespace RabbitMQCoreClient.DependencyInjection;
 
 /// <summary>
 /// Queue bus buffer options.

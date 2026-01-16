@@ -1,16 +1,17 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using RabbitMQCoreClient.Configuration.DependencyInjection;
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
 using RabbitMQCoreClient.DependencyInjection.ConfigFormats;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace RabbitMQCoreClient.DependencyInjection;
 
 /// <summary>
 /// Class containing extension methods for creating a RabbitMQ message handler configuration interface.
 /// <see cref="IRabbitMQCoreClientConsumerBuilder"/>.
 /// </summary>
-public static class ServiceCollectionExtensions
+public static partial class ServiceCollectionExtensions
 {
     static RabbitMQCoreClientBuilder AddRabbitMQCoreClient(this IServiceCollection services)
     {
@@ -85,7 +86,7 @@ public static class ServiceCollectionExtensions
     {
         var instance = configuration.Get<RabbitMQCoreClientOptions>() ?? new RabbitMQCoreClientOptions();
         setupAction?.Invoke(instance);
-        var options = Options.Options.Create(instance);
+        var options = Options.Create(instance);
 
         services.AddSingleton((x) => options);
     }

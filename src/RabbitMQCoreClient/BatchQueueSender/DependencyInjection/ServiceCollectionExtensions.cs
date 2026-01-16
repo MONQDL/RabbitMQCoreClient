@@ -2,17 +2,18 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using RabbitMQCoreClient.BatchQueueSender;
 
-namespace RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+namespace RabbitMQCoreClient.DependencyInjection;
 
 /// <summary>
 /// Class containing extension methods for registering the BatchQueueSender services at DI.
 /// </summary>
-public static class ServiceCollectionExtensions
+public static partial class ServiceCollectionExtensions
 {
     static IServiceCollection AddBatchQueueSenderCore(this IServiceCollection services)
     {
-        services.TryAddTransient<IQueueEventsWriter, QueueEventsWriter>();
+        services.TryAddTransient<IEventsWriter, EventsWriter>();
         services.TryAddSingleton<IQueueEventsBufferEngine, QueueEventsBufferEngine>();
         return services;
     }
@@ -33,7 +34,7 @@ public static class ServiceCollectionExtensions
         RegisterOptions(builder.Services, configuration, setupAction);
 
         builder.Services.AddBatchQueueSenderCore();
-        return builder; 
+        return builder;
     }
 
     /// <summary>

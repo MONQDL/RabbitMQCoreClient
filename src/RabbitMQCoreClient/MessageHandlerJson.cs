@@ -1,4 +1,4 @@
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.DependencyInjection;
 using RabbitMQCoreClient.Models;
 using RabbitMQCoreClient.Serializers;
 using System.Text;

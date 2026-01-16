@@ -1,4 +1,4 @@
-namespace RabbitMQCoreClient.DependencyInjection.ConfigModels;
+namespace RabbitMQCoreClient.DependencyInjection;
 
 /// <summary>
 /// Message queue for subscribing to events. 

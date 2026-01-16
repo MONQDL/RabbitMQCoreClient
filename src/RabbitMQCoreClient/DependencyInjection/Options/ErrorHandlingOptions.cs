@@ -1,6 +1,6 @@
 using RabbitMQ.Client.Events;
 
-namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+namespace RabbitMQCoreClient.DependencyInjection;
 
 /// <summary>
 /// Parameters that allow you to organize your own client exception handling mechanisms.

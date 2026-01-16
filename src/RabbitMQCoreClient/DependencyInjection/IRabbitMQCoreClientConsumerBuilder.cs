@@ -1,4 +1,5 @@
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.DependencyInjection;
+using RabbitMQCoreClient.Models;
 
 namespace Microsoft.Extensions.DependencyInjection;
 

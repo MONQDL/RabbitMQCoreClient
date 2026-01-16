@@ -44,6 +44,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQCoreClient;
+using RabbitMQCoreClient.DependencyInjection;
 
 Console.WriteLine("Simple console message publishing only example");
 
@@ -77,6 +78,7 @@ await publisher.SendAsync("""{ "foo": "bar" }""", "test_key");
 
 ```
 using RabbitMQCoreClient;
+using RabbitMQCoreClient.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -143,7 +145,7 @@ The feature allows you to buffer that messages at the in-memory list and flush t
 To use this feature register it at DI:
 
 ```csharp
-using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+using RabbitMQCoreClient.DependencyInjection;
 
 ...
 services.AddBatchQueueSender();
@@ -167,7 +169,7 @@ You can configure the flush options by Action or IConfiguration. Example of the 
 ```
 
 ```csharp
-using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+using RabbitMQCoreClient.DependencyInjection;
 
 ...
 services.AddBatchQueueSender(configuration.GetSection("QueueFlushSettings"));

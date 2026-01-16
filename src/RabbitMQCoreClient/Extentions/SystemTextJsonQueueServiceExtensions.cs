@@ -28,7 +28,7 @@ public static class SystemTextJsonQueueServiceExtensions
         JsonSerializerOptions? jsonSerializerSettings,
         string? exchange = default,
         CancellationToken cancellationToken = default
-        ) where T: class
+        ) where T : class
     {
         if (obj is null)
             throw new ArgumentNullException(nameof(obj));

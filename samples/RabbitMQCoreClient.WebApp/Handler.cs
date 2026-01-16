@@ -1,9 +1,7 @@
-﻿using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.DependencyInjection;
 using RabbitMQCoreClient.Models;
 using RabbitMQCoreClient.Serializers;
-using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RabbitMQCoreClient.WebApp;
 

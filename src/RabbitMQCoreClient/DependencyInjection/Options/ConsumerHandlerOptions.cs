@@ -1,6 +1,6 @@
 using RabbitMQCoreClient.Serializers;
 
-namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+namespace RabbitMQCoreClient.DependencyInjection;
 
 /// <summary>
 /// Consumer Handler Options.

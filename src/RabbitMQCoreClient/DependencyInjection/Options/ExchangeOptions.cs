@@ -1,4 +1,4 @@
-namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+namespace RabbitMQCoreClient.DependencyInjection;
 
 /// <summary>
 /// Exchange point settings.

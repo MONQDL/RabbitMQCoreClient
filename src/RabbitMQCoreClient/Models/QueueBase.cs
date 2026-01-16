@@ -1,8 +1,9 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQCoreClient.Configuration;
 using RabbitMQCoreClient.Exceptions;
 
-namespace RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+namespace RabbitMQCoreClient.Models;
 
 /// <summary>
 /// Options to be applied to the message queue.
@@ -76,8 +77,8 @@ public abstract class QueueBase
     /// <summary>
     /// Declare the queue on <see cref="Exchanges"/> and start consuming messages.
     /// </summary>
-    public virtual async Task StartQueueAsync(IChannel channel, 
-        AsyncEventingBasicConsumer consumer, 
+    public virtual async Task StartQueueAsync(IChannel channel,
+        AsyncEventingBasicConsumer consumer,
         CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(DeadLetterExchange)
@@ -94,7 +95,7 @@ public abstract class QueueBase
                 durable: UseQuorum || Durable,
                 exclusive: !UseQuorum && Exclusive,
                 autoDelete: !UseQuorum && AutoDelete,
-                arguments: Arguments, 
+                arguments: Arguments,
                 cancellationToken: cancellationToken)
             ?? throw new QueueBindException("Queue is not properly bind.");
         if (RoutingKeys.Count > 0)

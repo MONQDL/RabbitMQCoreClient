@@ -82,7 +82,7 @@ public static class QueueServiceExtensions
         byte[] obj,
         string routingKey,
         string? exchange = default,
-        CancellationToken cancellationToken = default) => 
+        CancellationToken cancellationToken = default) =>
         service.SendAsync(new ReadOnlyMemory<byte>(obj),
             props: QueueService.CreateDefaultProperties(),
             routingKey: routingKey,
