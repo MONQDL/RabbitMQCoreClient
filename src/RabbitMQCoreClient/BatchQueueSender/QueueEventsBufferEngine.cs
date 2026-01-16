@@ -12,7 +12,7 @@ namespace RabbitMQCoreClient.BatchQueueSender;
 /// <summary>
 /// Implementation of the stream data event store buffer.
 /// </summary>
-public sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDisposable
+internal sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDisposable
 {
     readonly Queue<EventItem> _buffer = new Queue<EventItem>();
     readonly object _syncRoot = new object();

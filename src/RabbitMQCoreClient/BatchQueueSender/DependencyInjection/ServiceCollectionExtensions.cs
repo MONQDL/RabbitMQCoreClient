@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQCoreClient.BatchQueueSender;
 
@@ -14,6 +15,18 @@ public static partial class ServiceCollectionExtensions
     static IServiceCollection AddBatchQueueSenderCore(this IServiceCollection services)
     {
         services.TryAddTransient<IEventsWriter, EventsWriter>();
+
+        services.AddSingleton<IQueueEventsBufferEngine, QueueEventsBufferEngine>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<QueueBatchSenderOptions>>();
+
+            return new QueueEventsBufferEngine(sp.GetRequiredService<IEventsWriter>(),
+                options?.Value?.EventsFlushCount ?? 10000,
+                TimeSpan.FromSeconds(options?.Value?.EventsFlushPeriodSec ?? 2),
+                sp.GetService<IEventsHandler>(),
+                sp.GetRequiredService<IRabbitMQCoreClientBuilder>(),
+                sp.GetService<ILogger<QueueEventsBufferEngine>>());
+        });
         services.TryAddSingleton<IQueueEventsBufferEngine, QueueEventsBufferEngine>();
         return services;
     }

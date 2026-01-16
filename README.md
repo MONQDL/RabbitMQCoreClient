@@ -136,9 +136,8 @@ var bodyList = Enumerable.Range(1, 10).Select(x => new SimpleObj { Name = $"test
 await queueService.SendBatchAsync(bodyList, "test_routing_key");
 ```
 
-#### Buffer messages in memory and send them at separate thread
+#### Buffer messages in memory and send them batch by timer or count
 
-From the version v5.1.0 there was introduced a new mechanic of the sending messages using separate thread. 
 You can use this feature when you have to send many parallel small messages to the queue (for example from the ASP.NET requests).
 The feature allows you to buffer that messages at the in-memory list and flush them at once using the `SendBatchAsync` method.
 
@@ -148,15 +147,12 @@ To use this feature register it at DI:
 using RabbitMQCoreClient.DependencyInjection;
 
 ...
-services.AddBatchQueueSender();
+services.AddRabbitMQCoreClient(config.GetSection("RabbitMQ"))
+    .AddBatchQueueSender();
 ```
 
 Instead of injecting the interface `RabbitMQCoreClient.IQueueService` inject `RabbitMQCoreClient.BatchQueueSender.IQueueEventsBufferEngine`.
-Then use methods to queue your messages. The methods are thread safe.
-```csharp
-Task AddEvent<T>(T @event, string routingKey);
-Task AddEvent<T>(IEnumerable<T> events, string routingKey);
-```
+Then use methods `void AddEvent()` to queue your messages. The methods are thread safe.
 
 You can configure the flush options by Action or IConfiguration. Example of the configuration JSON:
 ```json
@@ -172,7 +168,78 @@ You can configure the flush options by Action or IConfiguration. Example of the 
 using RabbitMQCoreClient.DependencyInjection;
 
 ...
-services.AddBatchQueueSender(configuration.GetSection("QueueFlushSettings"));
+services.AddRabbitMQCoreClient(config.GetSection("RabbitMQ"))
+    .AddBatchQueueSender(configuration.GetSection("QueueFlushSettings"));
+```
+
+#### Extended buffer configuration
+
+If you need you own implementation of sending events from buffer then implement the interface `IEventsWriter` and add it to DI after `.AddBatchQueueSender()`:
+
+```csharp
+builder.Services.AddTransient<IEventsWriter, CustomEventsWriter>();
+```
+
+Implementation example:
+
+```csharp
+namespace RabbitMQCoreClient.BatchQueueSender;
+
+/// <summary>
+/// Implementation of the service for sending events to the data bus.
+/// </summary>
+internal sealed class EventsWriter : IEventsWriter
+{
+    readonly IQueueService _queueService;
+
+    /// <summary>
+    /// Create new object of <see cref="EventsWriter"/>.
+    /// </summary>
+    /// <param name="queueService">Queue publisher.</param>
+    public EventsWriter(IQueueService queueService)
+    {
+        _queueService = queueService;
+    }
+
+    /// <inheritdoc />
+    public async Task WriteBatch(IEnumerable<EventItem> events, string routingKey)
+    {
+        if (!events.Any())
+            return;
+
+        await _queueService.SendBatchAsync(events.Select(x => x.Message), routingKey);
+    }
+}
+```
+
+You also can implement `IEventsHandler` to run you methods `OnAfterWriteEvents` or `OnWriteErrors`.
+You must add you custom implementation to DI:
+
+```csharp
+builder.Services.AddTransient<IEventsHandler, CustomEventsHandler>();
+```
+
+##### Custom EventItem model
+
+If you need to add custom properties to EventItem model and handle these properties in `IEventsWriter.WriteBatch`
+you can inherit from `EventItem` and use `IEventsBufferEngine.Add`. There is a ready to use class `EventItemWithSourceObject`.
+This class contains the source object on the basis of which an array of bytes will be calculated to be sent.
+At `IEventsWriter.WriteBatch` cast to the class `EventItemWithSourceObject`.
+Keep in mind that such a mechanism adds additional pressure to the GC.
+
+```csharp
+public async Task WriteBatch(IEnumerable<EventItem> events, string routingKey)
+{
+    ...
+    foreach (EventItem item in events)
+    {
+        if (item is EventItemWithSourceObject eventWithSource)
+        {
+            // Working с item.Source
+        }
+    }
+    ...
+}
 ```
 
 ### Receiving and processing messages

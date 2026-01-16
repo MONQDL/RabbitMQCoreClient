@@ -3,7 +3,7 @@ namespace RabbitMQCoreClient.BatchQueueSender;
 /// <summary>
 /// Implementation of the service for sending events to the data bus.
 /// </summary>
-public sealed class EventsWriter : IEventsWriter
+internal sealed class EventsWriter : IEventsWriter
 {
     readonly IQueueService _queueService;
 
