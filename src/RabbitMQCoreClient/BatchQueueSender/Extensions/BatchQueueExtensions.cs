@@ -14,6 +14,7 @@ public static class BatchQueueExtensions
     /// <param name="service">The <see cref="IQueueEventsBufferEngine"/> object.</param>
     /// <param name="obj">The object to send to the data bus.</param>
     /// <param name="routingKey">The name of the route key with which you want to send events to the data bus.</param>
+    [RequiresUnreferencedCode("Serialization might require types that cannot be statically analyzed.")]
     public static void AddEvent<T>(this IQueueEventsBufferEngine service, [NotNull] T obj, string routingKey)
         where T : class =>
         service.Add(new EventItem(service.Serializer.Serialize(obj), routingKey));
@@ -53,6 +54,7 @@ public static class BatchQueueExtensions
     /// <param name="objs">The list of objects to send to the data bus.</param>
     /// <param name="routingKey">The name of the route key with which you want to send events to the data bus.</param>
     /// <returns></returns>
+    [RequiresUnreferencedCode("Serialization might require types that cannot be statically analyzed.")]
     public static void AddEvents<T>(this IQueueEventsBufferEngine service, IEnumerable<T> objs, string routingKey)
         where T : class
     {

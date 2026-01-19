@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace RabbitMQCoreClient;
@@ -17,10 +18,8 @@ public static class QueueServiceExtensions
     /// <param name="exchange">The name of the exchange point to which the message is to be sent.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    /// <exception cref="ArgumentException">jsonString - jsonString
-    /// or
-    /// exchange - exchange</exception>
     /// <exception cref="ArgumentNullException">obj</exception>
+    [RequiresUnreferencedCode("Serialization might require types that cannot be statically analyzed.")]
     public static ValueTask SendAsync<T>(
         this IQueueService service,
         T obj,
@@ -136,10 +135,8 @@ public static class QueueServiceExtensions
     /// <param name="exchange">The name of the exchange point to which the message is to be sent.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    /// <exception cref="ArgumentException">jsonString - jsonString
-    /// or
-    /// exchange - exchange</exception>
     /// <exception cref="ArgumentNullException">obj</exception>
+    [RequiresUnreferencedCode("Serialization might require types that cannot be statically analyzed.")]
     public static ValueTask SendBatchAsync<T>(
         this IQueueService service,
         IEnumerable<T> objs,

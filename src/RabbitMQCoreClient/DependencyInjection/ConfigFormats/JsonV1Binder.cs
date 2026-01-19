@@ -75,7 +75,18 @@ public static class JsonV1Binder
         if (queueConfig is null)
             return;
 
-        var q = BindConfig<TConfig>(queueConfig);
+        TConfig q;
+        // Support of source generators.
+        if (typeof(TConfig) == typeof(QueueConfig))
+        {
+            q = (TConfig)(object)BindQueueConfig(queueConfig);
+        }
+        else if (typeof(TConfig) == typeof(SubscriptionConfig))
+        {
+            q = (TConfig)(object)BindSubscriptionConfig(queueConfig);
+        }
+        else
+            throw new ClientConfigurationException("Configuration supports only QueueConfig or SubscriptionConfig classes");
 
         var queue = createQueue(q);
         queue.Exchanges.Add(exchange.Name);
@@ -83,12 +94,18 @@ public static class JsonV1Binder
         AddQueue(builder, queue);
     }
 
-    static TConfig BindConfig<TConfig>(IConfigurationSection queueConfig)
-        where TConfig : new()
+    static QueueConfig BindQueueConfig(IConfigurationSection queueConfig)
     {
-        var q = new TConfig();
-        queueConfig.Bind(q);
-        return q;
+        var config = new QueueConfig();
+        queueConfig.Bind(config);
+        return config;
+    }
+
+    static SubscriptionConfig BindSubscriptionConfig(IConfigurationSection queueConfig)
+    {
+        var config = new SubscriptionConfig();
+        queueConfig.Bind(config);
+        return config;
     }
 
     static void AddQueue<T>(IRabbitMQCoreClientConsumerBuilder builder, T queue)

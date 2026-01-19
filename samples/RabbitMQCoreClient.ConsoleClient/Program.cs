@@ -96,7 +96,6 @@ await CreateBatchSender(batchSender, source.Token);
 
 await host.RunAsync();
 
-
 static async Task CreateSender(IQueueService queueService, CancellationToken token)
 {
     while (!token.IsCancellationRequested)
