@@ -1,4 +1,5 @@
 using RabbitMQCoreClient.Serializers;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
@@ -21,6 +22,7 @@ public static class SystemTextJsonQueueServiceExtensions
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException">obj</exception>
+    [RequiresUnreferencedCode("Method uses System.Text.Json.JsonSerializer.SerializeToUtf8Bytes witch is incompatible with trimming.")]
     public static ValueTask SendAsync<T>(
         this IQueueService service,
         T obj,
@@ -88,6 +90,7 @@ public static class SystemTextJsonQueueServiceExtensions
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException">obj</exception>
+    [RequiresUnreferencedCode("Method uses System.Text.Json.JsonSerializer.SerializeToUtf8Bytes witch is incompatible with trimming.")]
     public static ValueTask SendBatchAsync<T>(
         this IQueueService service,
         IEnumerable<T> objs,

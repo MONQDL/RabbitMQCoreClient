@@ -3,7 +3,7 @@ namespace RabbitMQCoreClient.DependencyInjection;
 /// <summary>
 /// Queue bus buffer options.
 /// </summary>
-public sealed class QueueBatchSenderOptions
+public sealed partial class QueueBatchSenderOptions
 {
     /// <summary>
     /// The period for resetting (writing) events in RabbitMQ.

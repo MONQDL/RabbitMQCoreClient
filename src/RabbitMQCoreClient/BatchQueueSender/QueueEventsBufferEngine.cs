@@ -68,13 +68,6 @@ internal sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDispo
         }
     }
 
-    /// <inheritdoc />
-    public void AddEvent<T>([NotNull] T @event, string routingKey)
-        where T : class
-    {
-        Add(new EventItem(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(@event), routingKey));
-    }
-
     async Task FlushByTimerAsync()
     {
         EventItem[]? array = null;

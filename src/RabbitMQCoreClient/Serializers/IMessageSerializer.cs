@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace RabbitMQCoreClient.Serializers;
 
 /// <summary>
@@ -11,6 +13,7 @@ public interface IMessageSerializer
     /// <typeparam name="TValue">The value type.</typeparam>
     /// <param name="value">The object to serialize.</param>
     /// <returns>Serialized string.</returns>
+    [RequiresUnreferencedCode("Serialization might require types that cannot be statically analyzed.")]
     ReadOnlyMemory<byte> Serialize<TValue>(TValue value);
 
     /// <summary>
@@ -19,5 +22,6 @@ public interface IMessageSerializer
     /// <typeparam name="TResult">The result type.</typeparam>
     /// <param name="value">The byte array of the message from the provider as ReadOnlyMemory &lt;byte&gt;.</param>
     /// <returns>The object of type <typeparamref name="TResult"/> or null.</returns>
+    [RequiresUnreferencedCode("Serialization might require types that cannot be statically analyzed.")]
     TResult? Deserialize<TResult>(ReadOnlyMemory<byte> value);
 }

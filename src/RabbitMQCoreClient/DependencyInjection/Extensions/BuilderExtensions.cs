@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using RabbitMQCoreClient.Configuration.DependencyInjection;
 using RabbitMQCoreClient.Exceptions;
 using RabbitMQCoreClient.Models;
+using System.Diagnostics.CodeAnalysis;
 
 namespace RabbitMQCoreClient.DependencyInjection;
 
@@ -208,7 +209,9 @@ public static class BuilderExtensions
     /// <param name="builder">IRabbitMQCoreClientConsumerBuilder instance.</param>
     /// <param name="routingKeys">Routing keys bound to the queue.</param>
     /// <exception cref="ClientConfigurationException">The handler needs to set at least one routing key.</exception>
-    public static IRabbitMQCoreClientConsumerBuilder AddHandler<TMessageHandler>(this IRabbitMQCoreClientConsumerBuilder builder,
+    public static IRabbitMQCoreClientConsumerBuilder AddHandler<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMessageHandler>(
+        this IRabbitMQCoreClientConsumerBuilder builder,
         params string[] routingKeys)
         where TMessageHandler : class, IMessageHandler
     {
@@ -226,7 +229,9 @@ public static class BuilderExtensions
     /// <param name="builder">IRabbitMQCoreClientConsumerBuilder instance.</param>
     /// <param name="options">The options that can change consumer handler default behavior.</param>
     /// <param name="routingKeys">Routing keys bound to the queue.</param>
-    public static IRabbitMQCoreClientConsumerBuilder AddHandler<TMessageHandler>(this IRabbitMQCoreClientConsumerBuilder builder,
+    public static IRabbitMQCoreClientConsumerBuilder AddHandler<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TMessageHandler>(
+            this IRabbitMQCoreClientConsumerBuilder builder,
             IList<string> routingKeys,
             ConsumerHandlerOptions? options = default)
         where TMessageHandler : class, IMessageHandler

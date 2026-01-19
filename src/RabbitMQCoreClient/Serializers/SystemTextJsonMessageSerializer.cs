@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace RabbitMQCoreClient.Serializers;
@@ -41,10 +42,12 @@ public class SystemTextJsonMessageSerializer : IMessageSerializer
     }
 
     /// <inheritdoc />
+    [RequiresUnreferencedCode("Method uses System.Text.Json.JsonSerializer.SerializeToUtf8Bytes witch is incompatible with trimming.")]
     public ReadOnlyMemory<byte> Serialize<TValue>(TValue value) =>
         System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value, Options);
 
     /// <inheritdoc />
+    [RequiresUnreferencedCode("Method uses System.Text.Json.JsonSerializer.SerializeToUtf8Bytes witch is incompatible with trimming.")]
     public TResult? Deserialize<TResult>(ReadOnlyMemory<byte> value) =>
         System.Text.Json.JsonSerializer.Deserialize<TResult>(value.Span, Options);
 }
