@@ -6,7 +6,6 @@ using RabbitMQCoreClient.Configuration;
 using RabbitMQCoreClient.Events;
 using RabbitMQCoreClient.Exceptions;
 using RabbitMQCoreClient.Models;
-using RabbitMQCoreClient.Serializers;
 using System.Net;
 
 namespace RabbitMQCoreClient;
@@ -65,7 +64,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
     }
 
     /// inheritdoc />
-    public async Task Start(CancellationToken cancellationToken = default)
+    public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         if (cancellationToken != default)
             _serviceLifetimeToken = cancellationToken;
@@ -97,7 +96,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
     }
 
     /// inheritdoc />
-    public async Task Shutdown() => await StopAndClearConsumer();
+    public async Task ShutdownAsync() => await StopAndClearConsumer();
 
     async Task ConnectToAllQueues()
     {
@@ -119,7 +118,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
                 queue.UseQuorum = true;
             await queue.StartQueueAsync(ConsumeChannel, _consumer, _serviceLifetimeToken);
         }
-        _log.LogInformation("Consumer connected to {QueuesCount} queues.", _builder.Queues.Count);
+        _log.LogInformation("Consumer connected to '{QueuesCount}' queues.", _builder.Queues.Count);
     }
 
     async Task Consumer_Received(object? sender, BasicDeliverEventArgs @event)
@@ -129,7 +128,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
 
         var rabbitArgs = new RabbitMessageEventArgs(@event.RoutingKey, @event.ConsumerTag);
 
-        _log.LogDebug("New message received with deliveryTag={DeliveryTag}.", @event.DeliveryTag);
+        _log.LogDebug("New message received with deliveryTag='{DeliveryTag}'.", @event.DeliveryTag);
 
         // Send a message to the death queue if ttl is over.
         if (@event.BasicProperties.Headers?.TryGetValue(AppConstants.RabbitMQHeaders.TtlHeader, out var ttl) == true
@@ -159,18 +158,15 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
         }
 
         handler.Options = handlerOptions ?? new();
-        // If user overrides the default serializer then the custom serializer will be used for the handler.
-        handler.Serializer = handler.Options.CustomSerializer ?? _builder.Builder.Serializer
-            ?? new SystemTextJsonMessageSerializer();
 
-        _log.LogDebug("Created scope for handler type {TypeName}. Start processing message.",
+        _log.LogDebug("Created scope for handler type '{TypeName}'. Start processing message.",
             handler.GetType().Name);
         try
         {
             await handler.HandleMessage(@event.Body, rabbitArgs);
             await ConsumeChannel.BasicAckAsync(@event.DeliveryTag, false, _serviceLifetimeToken);
-            _log.LogDebug("Message successfully processed by handler type {TypeName} " +
-                          "with deliveryTag={DeliveryTag}.", handler?.GetType().Name, @event.DeliveryTag);
+            _log.LogDebug("Message successfully processed by handler type '{TypeName}' " +
+                          "with deliveryTag='{DeliveryTag}'.", handler?.GetType().Name, @event.DeliveryTag);
         }
         catch (Exception e)
         {
@@ -179,7 +175,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
             {
                 case Routes.DeadLetter:
                     await ConsumeChannel.BasicNackAsync(@event.DeliveryTag, false, false, _serviceLifetimeToken);
-                    _log.LogError(e, "Error message with deliveryTag={DeliveryTag}. " +
+                    _log.LogError(e, "Error message with deliveryTag='{DeliveryTag}'. " +
                         "Sent to dead letter exchange.", @event.DeliveryTag);
                     break;
                 case Routes.SourceQueue:
@@ -196,7 +192,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
                         exchange: @event.Exchange,
                         routingKey: !string.IsNullOrEmpty(handlerOptions?.RetryKey) ? handlerOptions.RetryKey : @event.RoutingKey,
                         decreaseTtl: decreaseTtl);
-                    _log.LogError(e, "Error message with deliveryTag={DeliveryTag}. Requeue.", @event.DeliveryTag);
+                    _log.LogError(e, "Error message with deliveryTag='{DeliveryTag}'. Requeue.", @event.DeliveryTag);
                     break;
             }
         }
@@ -205,7 +201,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
     async Task QueueService_OnReconnected(object? sender, ReconnectEventArgs args)
     {
         await StopAndClearConsumer();
-        await Start();
+        await StartAsync();
     }
 
     Task QueueService_OnConnectionShutdown(object? sender, ShutdownEventArgs args) =>
@@ -262,7 +258,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
 
     async Task RejectDueToNoHandler(BasicDeliverEventArgs ea)
     {
-        _log.LogDebug("Message was rejected due to no handler configured for the routing key {RoutingKey}.",
+        _log.LogDebug("Message was rejected due to no handler configured for the routing key '{RoutingKey}'.",
             ea.RoutingKey);
 
         if (ConsumeChannel != null)

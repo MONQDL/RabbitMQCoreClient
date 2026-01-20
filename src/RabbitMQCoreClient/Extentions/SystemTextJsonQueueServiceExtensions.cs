@@ -1,3 +1,4 @@
+using RabbitMQCoreClient.BatchQueueSender;
 using RabbitMQCoreClient.Serializers;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
@@ -143,5 +144,38 @@ public static class SystemTextJsonQueueServiceExtensions
             routingKey: routingKey,
             cancellationToken: cancellationToken
         );
+    }
+
+    /// <summary>
+    /// Add an object to be send as event to the data bus.
+    /// </summary>
+    /// <param name="service">The <see cref="IQueueBufferService"/> object.</param>
+    /// <param name="obj">The object to send to the data bus.</param>
+    /// <param name="routingKey">The name of the route key with which you want to send events to the data bus.</param>
+    /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+    public static void AddEvent<T>(this IQueueBufferService service, 
+        [NotNull] T obj, 
+        string routingKey,
+        JsonTypeInfo<T> jsonTypeInfo)
+        where T : class =>
+        service.Add(new EventItem(JsonSerializer.SerializeToUtf8Bytes(obj, jsonTypeInfo), routingKey));
+
+    /// <summary>
+    /// Add objects collection to send as events to the data bus.
+    /// </summary>
+    /// <typeparam name="T">The type of list item of the <paramref name="objs"/> property.</typeparam>
+    /// <param name="service">The <see cref="IQueueBufferService"/> object.</param>
+    /// <param name="objs">The list of objects to send to the data bus.</param>
+    /// <param name="routingKey">The name of the route key with which you want to send events to the data bus.</param>
+    /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+    /// <returns></returns>
+    public static void AddEvents<T>(this IQueueBufferService service, 
+        IEnumerable<T> objs, 
+        string routingKey,
+        JsonTypeInfo<T> jsonTypeInfo)
+        where T : class
+    {
+        foreach (var obj in objs)
+            service.Add(new EventItem(JsonSerializer.SerializeToUtf8Bytes(obj, jsonTypeInfo), routingKey));
     }
 }

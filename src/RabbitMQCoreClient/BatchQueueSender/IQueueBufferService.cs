@@ -6,7 +6,7 @@ namespace RabbitMQCoreClient.BatchQueueSender;
 /// <summary>
 /// Batch Queue Events buffer interface.
 /// </summary>
-public interface IQueueEventsBufferEngine
+public interface IQueueBufferService
 {
     /// <summary>
     /// Message serializer to be used to serialize objects to sent to queue.

@@ -5,6 +5,9 @@ using RabbitMQCoreClient.Models;
 
 namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats;
 
+/// <summary>
+/// Configure RabbitMQCore client builder from IConfiguration.
+/// </summary>
 public static class JsonV1Binder
 {
     const string QueueSection = "Queue";
@@ -12,6 +15,12 @@ public static class JsonV1Binder
     const string ExchangeName = "Exchange:Name";
     const string SubscriptionSection = "Subscription";
 
+    /// <summary>
+    /// Configure RabbitMQCoreClient with v1 configuration.
+    /// </summary>
+    /// <param name="builder">RabbitMQCoreClient consumer builder.</param>
+    /// <param name="configuration">configuration</param>
+    /// <returns></returns>
     public static IRabbitMQCoreClientBuilder RegisterV1Configuration(this IRabbitMQCoreClientBuilder builder,
         IConfiguration? configuration)
     {
@@ -26,6 +35,12 @@ public static class JsonV1Binder
         return builder;
     }
 
+    /// <summary>
+    /// Configure RabbitMQCoreClient with v1 configuration.
+    /// </summary>
+    /// <param name="builder">RabbitMQCoreClient consumer builder.</param>
+    /// <param name="configuration">configuration</param>
+    /// <returns></returns>
     public static IRabbitMQCoreClientConsumerBuilder RegisterV1Configuration(this IRabbitMQCoreClientConsumerBuilder builder,
         IConfiguration? configuration)
     {

@@ -5,6 +5,9 @@ using System.Text.Json.Serialization;
 
 namespace RabbitMQCoreClient.DependencyInjection;
 
+/// <summary>
+/// RabbitMQCoreClient options.
+/// </summary>
 public class RabbitMQCoreClientOptions
 {
     /// <summary>
@@ -28,6 +31,9 @@ public class RabbitMQCoreClientOptions
     /// </summary>
     public int RequestedConnectionTimeout { get; set; } = 30000;
 
+    /// <summary>
+    /// Heartbeat timeout to use when negotiating with the server.
+    /// </summary>
     public ushort RequestedHeartbeat { get; set; } = 60;
 
     /// <summary>

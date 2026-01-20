@@ -4,6 +4,9 @@ using RabbitMQCoreClient.Models;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection;
 
+/// <summary>
+/// RabbitMQCoreClient consumer builder.
+/// </summary>
 public sealed class RabbitMQCoreClientConsumerBuilder : IRabbitMQCoreClientConsumerBuilder
 {
     /// <summary>

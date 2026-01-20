@@ -1,7 +1,7 @@
 using RabbitMQCoreClient.DependencyInjection;
 using RabbitMQCoreClient.Models;
-using RabbitMQCoreClient.Serializers;
 using System.Text;
+using System.Text.Json.Serialization.Metadata;
 
 namespace RabbitMQCoreClient;
 
@@ -11,6 +11,7 @@ namespace RabbitMQCoreClient;
 /// <typeparam name="TModel">The type of model that will be deserialized into.</typeparam>
 /// <seealso cref="RabbitMQCoreClient.IMessageHandler" />
 public abstract class MessageHandlerJson<TModel> : IMessageHandler
+    where TModel : class
 {
     /// <summary>
     /// Incoming message routing methods.
@@ -45,9 +46,10 @@ public abstract class MessageHandlerJson<TModel> : IMessageHandler
     public ConsumerHandlerOptions? Options { get; set; }
 
     /// <summary>
-    /// The default json serializer.
+    /// You must provide TModel json serialization context.
     /// </summary>
-    public IMessageSerializer Serializer { get; set; } = new SystemTextJsonMessageSerializer();
+    /// <returns></returns>
+    protected abstract JsonTypeInfo<TModel> GetSerializerContext();
 
     /// <inheritdoc />
     public async Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args)
@@ -56,7 +58,8 @@ public abstract class MessageHandlerJson<TModel> : IMessageHandler
         TModel messageModel;
         try
         {
-            var obj = Serializer.Deserialize<TModel>(message)
+            var context = GetSerializerContext();
+            var obj = System.Text.Json.JsonSerializer.Deserialize<TModel>(RawJson, context)
                 ?? throw new InvalidOperationException("The json parser returns null.");
             messageModel = obj;
         }

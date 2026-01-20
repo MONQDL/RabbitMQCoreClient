@@ -19,7 +19,7 @@ sealed class RabbitMQHostedService : Microsoft.Extensions.Hosting.IHostedService
         // If the AddConsumer() method was not called,
         // then we do not start the event listening channel.
         if (_consumer != null)
-            await _consumer.Start(cancellationToken); // Consumer starts publisher first.
+            await _consumer.StartAsync(cancellationToken); // Consumer starts publisher first.
         else
             await _publisher.ConnectAsync(cancellationToken);
     }

@@ -112,9 +112,6 @@ public static class QueueServiceExtensions
 
         var body = Encoding.UTF8.GetBytes(obj).AsMemory();
 
-        //_log.LogDebug("Sending json message '{Message}' to exchange '{Exchange}' " +
-        //    "with routing key '{RoutingKey}'.", json, exchange, routingKey);
-
         return service.SendAsync(body,
             props: QueueService.CreateDefaultProperties(),
             routingKey: routingKey,
@@ -189,19 +186,14 @@ public static class QueueServiceExtensions
         IEnumerable<string> objs,
         string routingKey,
         string? exchange = default,
-        CancellationToken cancellationToken = default)
-    {
-        //_log.LogDebug("Sending json messages batch to exchange '{Exchange}' " +
-        //    "with routing key '{RoutingKey}'.", exchange, routingKey);
-
-        return service.SendBatchAsync(
-            objs: objs.Select(x => new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(x))),
-            QueueService.CreateDefaultProperties(),
-            routingKey: routingKey,
-            exchange: exchange,
-            cancellationToken: cancellationToken
-        );
-    }
+        CancellationToken cancellationToken = default) => 
+            service.SendBatchAsync(
+                objs: objs.Select(x => new ReadOnlyMemory<byte>(Encoding.UTF8.GetBytes(x))),
+                QueueService.CreateDefaultProperties(),
+                routingKey: routingKey,
+                exchange: exchange,
+                cancellationToken: cancellationToken
+            );
 
     /// <summary>
     /// Send a batch of string messages to the queue with default properties.
@@ -217,17 +209,12 @@ public static class QueueServiceExtensions
         IEnumerable<ReadOnlyMemory<byte>> objs,
         string routingKey,
         string? exchange = default,
-        CancellationToken cancellationToken = default)
-    {
-        //_log.LogDebug("Sending json messages batch to exchange '{Exchange}' " +
-        //    "with routing key '{RoutingKey}'.", exchange, routingKey);
-
-        return service.SendBatchAsync(
-            objs: objs,
-            QueueService.CreateDefaultProperties(),
-            routingKey: routingKey,
-            exchange: exchange,
-            cancellationToken: cancellationToken
-        );
-    }
+        CancellationToken cancellationToken = default) => 
+            service.SendBatchAsync(
+                objs: objs,
+                QueueService.CreateDefaultProperties(),
+                routingKey: routingKey,
+                exchange: exchange,
+                cancellationToken: cancellationToken
+            );
 }

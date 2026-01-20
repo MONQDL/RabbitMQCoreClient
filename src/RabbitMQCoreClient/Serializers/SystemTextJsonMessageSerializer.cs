@@ -14,7 +14,6 @@ public class SystemTextJsonMessageSerializer : IMessageSerializer
     public static System.Text.Json.JsonSerializerOptions DefaultOptions { get; } =
         new System.Text.Json.JsonSerializerOptions
         {
-            PropertyNameCaseInsensitive = true,
             DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
             Converters = { new JsonStringEnumConverter() }
         };
@@ -45,9 +44,4 @@ public class SystemTextJsonMessageSerializer : IMessageSerializer
     [RequiresUnreferencedCode("Method uses System.Text.Json.JsonSerializer.SerializeToUtf8Bytes witch is incompatible with trimming.")]
     public ReadOnlyMemory<byte> Serialize<TValue>(TValue value) =>
         System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value, Options);
-
-    /// <inheritdoc />
-    [RequiresUnreferencedCode("Method uses System.Text.Json.JsonSerializer.SerializeToUtf8Bytes witch is incompatible with trimming.")]
-    public TResult? Deserialize<TResult>(ReadOnlyMemory<byte> value) =>
-        System.Text.Json.JsonSerializer.Deserialize<TResult>(value.Span, Options);
 }

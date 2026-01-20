@@ -1,11 +1,10 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
-namespace RabbitMQCoreClient.ConsoleClient;
-
+namespace RabbitMQCoreClient.WebApp;
 
 public class SimpleObj
 {
-    public string Name { get; set; }
+    public required string Name { get; set; }
 }
 
 [JsonSerializable(typeof(SimpleObj))]

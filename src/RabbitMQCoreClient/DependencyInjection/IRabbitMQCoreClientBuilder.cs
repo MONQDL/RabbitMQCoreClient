@@ -16,7 +16,7 @@ public interface IRabbitMQCoreClientBuilder
     /// <summary>
     /// List of configured exchange points.
     /// </summary>
-    IList<Exchange> Exchanges { get; }
+    List<Exchange> Exchanges { get; }
 
     /// <summary>
     /// Gets the default exchange.

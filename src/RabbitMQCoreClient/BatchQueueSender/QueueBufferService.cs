@@ -12,7 +12,7 @@ namespace RabbitMQCoreClient.BatchQueueSender;
 /// <summary>
 /// Implementation of the stream data event store buffer.
 /// </summary>
-internal sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDisposable
+internal sealed class QueueBufferService : IQueueBufferService, IDisposable
 {
     readonly Queue<EventItem> _buffer = new Queue<EventItem>();
     readonly object _syncRoot = new object();
@@ -21,7 +21,7 @@ internal sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDispo
     readonly TimeSpan _timeLimit;
     readonly IEventsWriter _writer;
     readonly IEventsHandler? _eventsHandler;
-    readonly ILogger<QueueEventsBufferEngine>? _log;
+    readonly ILogger<QueueBufferService>? _log;
     int _count;
     Task _currentFlushTask = Task.CompletedTask;
 
@@ -34,14 +34,14 @@ internal sealed class QueueEventsBufferEngine : IQueueEventsBufferEngine, IDispo
 
     /// <summary>
     /// The implementation constructor of the event storage buffer.
-    /// Creates a new instance of the class <see cref="QueueEventsBufferEngine"/>.
+    /// Creates a new instance of the class <see cref="QueueBufferService"/>.
     /// </summary>
-    public QueueEventsBufferEngine(IEventsWriter writer,
+    public QueueBufferService(IEventsWriter writer,
         int sizeLimit,
         TimeSpan timeLimit,
         IEventsHandler? eventsHandler,
         IRabbitMQCoreClientBuilder builder,
-        ILogger<QueueEventsBufferEngine>? log)
+        ILogger<QueueBufferService>? log)
     {
         _log = log;
         _writer = writer ?? throw new ArgumentNullException(nameof(writer));

@@ -5,12 +5,21 @@ using RabbitMQCoreClient.Models;
 
 namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats;
 
+/// <summary>
+/// Configure RabbitMQCore client builder from IConfiguration.
+/// </summary>
 public static class JsonV2Binder
 {
     const string ExchangesSection = "Exchanges";
     const string QueuesSection = "Queues";
     const string SubscriptionsSection = "Subscriptions";
 
+    /// <summary>
+    /// Configure RabbitMQCoreClient with v2 configuration.
+    /// </summary>
+    /// <param name="builder">RabbitMQCoreClient consumer builder.</param>
+    /// <param name="configuration">configuration</param>
+    /// <returns></returns>
     public static IRabbitMQCoreClientBuilder RegisterV2Configuration(this IRabbitMQCoreClientBuilder builder,
         IConfiguration configuration)
     {
@@ -23,17 +32,12 @@ public static class JsonV2Binder
         return builder;
     }
 
-    static void RegisterExchanges(IRabbitMQCoreClientBuilder builder, IConfiguration configuration)
-    {
-        var exchanges = configuration.GetSection(ExchangesSection);
-        foreach (var exchangeConfig in exchanges.GetChildren())
-        {
-            var options = new ExchangeOptions();
-            exchangeConfig.Bind(options);
-            builder.AddExchange(options.Name, options: options);
-        }
-    }
-
+    /// <summary>
+    /// Configure RabbitMQCoreClient with v2 configuration.
+    /// </summary>
+    /// <param name="builder">RabbitMQCoreClient consumer builder.</param>
+    /// <param name="configuration">configuration</param>
+    /// <returns></returns>
     public static IRabbitMQCoreClientConsumerBuilder RegisterV2Configuration(this IRabbitMQCoreClientConsumerBuilder builder,
         IConfiguration configuration)
     {
@@ -51,6 +55,17 @@ public static class JsonV2Binder
             (qConfig) => Subscription.Create(qConfig));
 
         return builder;
+    }
+
+    static void RegisterExchanges(IRabbitMQCoreClientBuilder builder, IConfiguration configuration)
+    {
+        var exchanges = configuration.GetSection(ExchangesSection);
+        foreach (var exchangeConfig in exchanges.GetChildren())
+        {
+            var options = new ExchangeOptions();
+            exchangeConfig.Bind(options);
+            builder.AddExchange(options.Name, options: options);
+        }
     }
 
     static void RegisterQueues<TConfig, TQueue>(IRabbitMQCoreClientConsumerBuilder builder,

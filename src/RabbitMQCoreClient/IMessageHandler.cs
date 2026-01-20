@@ -1,6 +1,5 @@
 using RabbitMQCoreClient.DependencyInjection;
 using RabbitMQCoreClient.Models;
-using RabbitMQCoreClient.Serializers;
 
 namespace RabbitMQCoreClient;
 
@@ -25,9 +24,4 @@ public interface IMessageHandler
     /// Consumer handler options, that was used during configuration.
     /// </summary>
     ConsumerHandlerOptions? Options { get; set; }
-
-    /// <summary>
-    /// The default json serializer.
-    /// </summary>
-    IMessageSerializer Serializer { get; set; }
 }

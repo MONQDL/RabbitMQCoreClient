@@ -13,16 +13,16 @@ public interface IQueueConsumer : IAsyncDisposable
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns></returns>
-    Task Start(CancellationToken cancellationToken = default);
+    Task StartAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Stops listening Queues.
     /// </summary>
-    Task Shutdown();
+    Task ShutdownAsync();
 
     /// <summary>
     /// The channel that consume messages from the RabbitMQ Instance. 
-    /// Can be Null, if <see cref="Start"/> method was not called.
+    /// Can be Null, if <see cref="StartAsync"/> method was not called.
     /// </summary>
     IChannel? ConsumeChannel { get; }
 

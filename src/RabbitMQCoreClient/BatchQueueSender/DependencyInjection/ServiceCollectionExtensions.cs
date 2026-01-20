@@ -16,24 +16,23 @@ public static partial class ServiceCollectionExtensions
     {
         services.TryAddTransient<IEventsWriter, EventsWriter>();
 
-        services.AddSingleton<IQueueEventsBufferEngine, QueueEventsBufferEngine>(sp =>
+        services.TryAddSingleton<IQueueBufferService>((IServiceProvider sp) =>
         {
             var options = sp.GetRequiredService<IOptions<QueueBatchSenderOptions>>();
 
-            return new QueueEventsBufferEngine(sp.GetRequiredService<IEventsWriter>(),
+            return new QueueBufferService(sp.GetRequiredService<IEventsWriter>(),
                 options?.Value?.EventsFlushCount ?? 10000,
                 TimeSpan.FromSeconds(options?.Value?.EventsFlushPeriodSec ?? 2),
                 sp.GetService<IEventsHandler>(),
                 sp.GetRequiredService<IRabbitMQCoreClientBuilder>(),
-                sp.GetService<ILogger<QueueEventsBufferEngine>>());
+                sp.GetService<ILogger<QueueBufferService>>());
         });
-        services.TryAddSingleton<IQueueEventsBufferEngine, QueueEventsBufferEngine>();
         return services;
     }
 
     /// <summary>
-    /// Registers an instance of the <see cref="IQueueEventsBufferEngine"/> interface in the DI.
-    /// Injected service <see cref="IQueueEventsBufferEngine"/> can be used to send messages
+    /// Registers an instance of the <see cref="IQueueBufferService"/> interface in the DI.
+    /// Injected service <see cref="IQueueBufferService"/> can be used to send messages
     /// to the inmemory queue and process them at the separate thread.
     /// </summary>
     /// <param name="builder">The RabbitMQ Client builder.</param>
@@ -51,8 +50,8 @@ public static partial class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers an instance of the <see cref="IQueueEventsBufferEngine"/> interface in the DI.
-    /// Injected service <see cref="IQueueEventsBufferEngine"/> can be used to send messages
+    /// Registers an instance of the <see cref="IQueueBufferService"/> interface in the DI.
+    /// Injected service <see cref="IQueueBufferService"/> can be used to send messages
     /// to the inmemory queue and process them at the separate thread.
     /// </summary>
     /// <param name="builder">The RabbitMQ Client builder.</param>
@@ -69,13 +68,67 @@ public static partial class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers an instance of the <see cref="IQueueEventsBufferEngine"/> interface in the DI.
-    /// Injected service <see cref="IQueueEventsBufferEngine"/> can be used to send messages
+    /// Registers an instance of the <see cref="IQueueBufferService"/> interface in the DI.
+    /// Injected service <see cref="IQueueBufferService"/> can be used to send messages
     /// to the inmemory queue and process them at the separate thread.
     /// </summary>
     /// <param name="builder">List of services registered in DI.</param>
     /// <returns></returns>
     public static IRabbitMQCoreClientBuilder AddBatchQueueSender(this IRabbitMQCoreClientBuilder builder)
+    {
+        builder.Services.TryAddSingleton((x) => Options.Create(new QueueBatchSenderOptions()));
+        builder.Services.AddBatchQueueSenderCore();
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers an instance of the <see cref="IQueueBufferService"/> interface in the DI.
+    /// Injected service <see cref="IQueueBufferService"/> can be used to send messages
+    /// to the inmemory queue and process them at the separate thread.
+    /// </summary>
+    /// <param name="builder">The RabbitMQ Client builder.</param>
+    /// <param name="configuration">Configuration section containing fields for configuring the message processing service.</param>
+    /// <param name="setupAction">Use this method if you need to override the configuration.</param>
+    public static IRabbitMQCoreClientConsumerBuilder AddBatchQueueSender(
+        this IRabbitMQCoreClientConsumerBuilder builder,
+        IConfiguration configuration,
+        Action<QueueBatchSenderOptions>? setupAction = null)
+    {
+        RegisterOptions(builder.Services, configuration, setupAction);
+
+        builder.Services.AddBatchQueueSenderCore();
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers an instance of the <see cref="IQueueBufferService"/> interface in the DI.
+    /// Injected service <see cref="IQueueBufferService"/> can be used to send messages
+    /// to the inmemory queue and process them at the separate thread.
+    /// </summary>
+    /// <param name="builder">The RabbitMQ Client builder.</param>
+    /// <param name="setupAction">Use this method if you need to override the configuration.</param>
+    /// <returns></returns>
+    public static IRabbitMQCoreClientConsumerBuilder AddBatchQueueSender(
+        this IRabbitMQCoreClientConsumerBuilder builder,
+        Action<QueueBatchSenderOptions>? setupAction)
+    {
+        if (setupAction != null)
+            builder.Services.Configure(setupAction);
+        builder.Services.AddBatchQueueSenderCore();
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers an instance of the <see cref="IQueueBufferService"/> interface in the DI.
+    /// Injected service <see cref="IQueueBufferService"/> can be used to send messages
+    /// to the inmemory queue and process them at the separate thread.
+    /// </summary>
+    /// <param name="builder">List of services registered in DI.</param>
+    /// <returns></returns>
+    public static IRabbitMQCoreClientConsumerBuilder AddBatchQueueSender(
+        this IRabbitMQCoreClientConsumerBuilder builder)
     {
         builder.Services.TryAddSingleton((x) => Options.Create(new QueueBatchSenderOptions()));
         builder.Services.AddBatchQueueSenderCore();

@@ -15,13 +15,4 @@ public interface IMessageSerializer
     /// <returns>Serialized string.</returns>
     [RequiresUnreferencedCode("Serialization might require types that cannot be statically analyzed.")]
     ReadOnlyMemory<byte> Serialize<TValue>(TValue value);
-
-    /// <summary>
-    /// Deserialize the value <paramref name="value"/> from string to <typeparamref name="TResult"/> type.
-    /// </summary>
-    /// <typeparam name="TResult">The result type.</typeparam>
-    /// <param name="value">The byte array of the message from the provider as ReadOnlyMemory &lt;byte&gt;.</param>
-    /// <returns>The object of type <typeparamref name="TResult"/> or null.</returns>
-    [RequiresUnreferencedCode("Serialization might require types that cannot be statically analyzed.")]
-    TResult? Deserialize<TResult>(ReadOnlyMemory<byte> value);
 }

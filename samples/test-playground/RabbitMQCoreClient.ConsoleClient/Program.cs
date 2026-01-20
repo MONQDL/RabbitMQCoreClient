@@ -64,8 +64,8 @@ var serviceProvider = host.Services;
 
 var queueService = serviceProvider.GetRequiredService<IQueueService>();
 var consumer = serviceProvider.GetRequiredService<IQueueConsumer>();
-var batchSender = serviceProvider.GetRequiredService<IQueueEventsBufferEngine>();
-await consumer.Start();
+var batchSender = serviceProvider.GetRequiredService<IQueueBufferService>();
+await consumer.StartAsync();
 
 //var body = new SimpleObj { Name = "test sending" };
 //await queueService.SendAsync(body, "test_routing_key");
@@ -113,7 +113,7 @@ static async Task CreateSender(IQueueService queueService, CancellationToken tok
     }
 }
 
-static async Task CreateBatchSender(IQueueEventsBufferEngine batchSender, CancellationToken token)
+static async Task CreateBatchSender(IQueueBufferService batchSender, CancellationToken token)
 {
     while (!token.IsCancellationRequested)
     {

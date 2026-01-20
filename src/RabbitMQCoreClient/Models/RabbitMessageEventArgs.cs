@@ -1,5 +1,8 @@
 namespace RabbitMQCoreClient.Models;
 
+/// <summary>
+/// Arguments that used in message consumer methods.
+/// </summary>
 public class RabbitMessageEventArgs : EventArgs
 {
     /// <summary>

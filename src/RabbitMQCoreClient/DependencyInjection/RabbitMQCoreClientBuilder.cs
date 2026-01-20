@@ -4,6 +4,9 @@ using RabbitMQCoreClient.Serializers;
 
 namespace RabbitMQCoreClient.Configuration.DependencyInjection;
 
+/// <summary>
+/// RabbitMQCore client builder.
+/// </summary>
 public sealed class RabbitMQCoreClientBuilder : IRabbitMQCoreClientBuilder
 {
     /// <summary>
@@ -18,7 +21,7 @@ public sealed class RabbitMQCoreClientBuilder : IRabbitMQCoreClientBuilder
     public IServiceCollection Services { get; }
 
     /// <inheritdoc />
-    public IList<Exchange> Exchanges { get; } = [];
+    public List<Exchange> Exchanges { get; } = [];
 
     /// <inheritdoc />
     public Exchange? DefaultExchange => Exchanges.FirstOrDefault(x => x.Options.IsDefault);
