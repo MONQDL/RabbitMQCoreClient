@@ -13,11 +13,6 @@ public abstract class MessageHandlerJson<TModel> : IMessageHandler
     where TModel : class
 {
     /// <summary>
-    /// Incoming message routing methods.
-    /// </summary>
-    public ErrorMessageRouting ErrorMessageRouter { get; } = new ErrorMessageRouting();
-
-    /// <summary>
     /// The method will be called when there is an error parsing Json into the model.
     /// </summary>
     /// <param name="json">The json.</param>
