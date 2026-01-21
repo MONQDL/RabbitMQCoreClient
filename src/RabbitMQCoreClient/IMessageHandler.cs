@@ -1,4 +1,3 @@
-using RabbitMQCoreClient.DependencyInjection;
 using RabbitMQCoreClient.Models;
 
 namespace RabbitMQCoreClient;
@@ -13,15 +12,8 @@ public interface IMessageHandler
     /// </summary>
     /// <param name="message">Input byte array from consumed queue.</param>
     /// <param name="args">The <see cref="RabbitMessageEventArgs"/> instance containing the message data.</param>
-    Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args);
-
-    /// <summary>
-    /// Instructions to the router in case of an exception while processing a message.
-    /// </summary>
-    ErrorMessageRouting ErrorMessageRouter { get; }
-
-    /// <summary>
-    /// Consumer handler options, that was used during configuration.
-    /// </summary>
-    ConsumerHandlerOptions? Options { get; set; }
+    /// <param name="context">Handler configuration context.</param>
+    Task HandleMessage(ReadOnlyMemory<byte> message,
+        RabbitMessageEventArgs args,
+        MessageHandlerContext context);
 }

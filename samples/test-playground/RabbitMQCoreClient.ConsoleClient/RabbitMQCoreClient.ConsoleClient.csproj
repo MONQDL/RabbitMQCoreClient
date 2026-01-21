@@ -14,9 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\RabbitMQCoreClient\RabbitMQCoreClient.csproj" />
+    <ProjectReference Include="..\..\..\src\RabbitMQCoreClient\RabbitMQCoreClient.csproj" />
   </ItemGroup>
-
+  
   <ItemGroup>
     <None Update="appsettings.Development.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -157,13 +157,13 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
             return;
         }
 
-        handler.Options = handlerOptions ?? new();
+        var handlerContext = new MessageHandlerContext(new(), handlerOptions);
 
         _log.LogDebug("Created scope for handler type '{TypeName}'. Start processing message.",
             handler.GetType().Name);
         try
         {
-            await handler.HandleMessage(@event.Body, rabbitArgs);
+            await handler.HandleMessage(@event.Body, rabbitArgs, handlerContext);
             await ConsumeChannel.BasicAckAsync(@event.DeliveryTag, false, _serviceLifetimeToken);
             _log.LogDebug("Message successfully processed by handler type '{TypeName}' " +
                           "with deliveryTag='{DeliveryTag}'.", handler?.GetType().Name, @event.DeliveryTag);
@@ -171,7 +171,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
         catch (Exception e)
         {
             // Process the message depending on the given route.
-            switch (handler.ErrorMessageRouter.Route)
+            switch (handlerContext.ErrorMessageRouter.Route)
             {
                 case Routes.DeadLetter:
                     await ConsumeChannel.BasicNackAsync(@event.DeliveryTag, false, false, _serviceLifetimeToken);
@@ -179,7 +179,7 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
                         "Sent to dead letter exchange.", @event.DeliveryTag);
                     break;
                 case Routes.SourceQueue:
-                    var decreaseTtl = handler.ErrorMessageRouter.TtlAction == TtlActions.Decrease;
+                    var decreaseTtl = handlerContext.ErrorMessageRouter.TtlAction == TtlActions.Decrease;
                     await ConsumeChannel.BasicAckAsync(@event.DeliveryTag, false, _serviceLifetimeToken);
 
                     // Forward the message back to the queue, while the TTL of the message is reduced by 1,

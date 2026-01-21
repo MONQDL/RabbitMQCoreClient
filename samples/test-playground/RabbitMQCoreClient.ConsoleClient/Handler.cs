@@ -1,6 +1,4 @@
-using RabbitMQCoreClient.DependencyInjection;
 using RabbitMQCoreClient.Models;
-using RabbitMQCoreClient.Serializers;
 using System;
 using System.Text;
 using System.Text.Json.Serialization.Metadata;
@@ -13,15 +11,13 @@ public class Handler : MessageHandlerJson<SimpleObj>
     protected override JsonTypeInfo<SimpleObj> GetSerializerContext() =>
         SimpleObjContext.Default.SimpleObj;
 
-    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args)
+    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
         Console.WriteLine($"message from {args.RoutingKey}");
         ProcessMessage(message);
 
         return Task.CompletedTask;
     }
-
-    protected override ValueTask OnParseError(string json, Exception e, RabbitMessageEventArgs args) => base.OnParseError(json, e, args);
 
     void ProcessMessage(SimpleObj obj)
     {
@@ -37,10 +33,7 @@ public class Handler : MessageHandlerJson<SimpleObj>
 
 public class RawHandler : IMessageHandler
 {
-    public ErrorMessageRouting ErrorMessageRouter => new ErrorMessageRouting();
-    public ConsumerHandlerOptions Options { get; set; }
-
-    public Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args)
+    public Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
         Console.WriteLine(Encoding.UTF8.GetString(message.ToArray()));
         return Task.CompletedTask;
@@ -49,11 +42,7 @@ public class RawHandler : IMessageHandler
 
 public class RawErrorHandler : IMessageHandler
 {
-    public ErrorMessageRouting ErrorMessageRouter => new ErrorMessageRouting();
-    public ConsumerHandlerOptions Options { get; set; }
-    public IMessageSerializer Serializer { get; set; }
-
-    public Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args)
+    public Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
         Console.WriteLine(Encoding.UTF8.GetString(message.ToArray()));
         throw new Exception();

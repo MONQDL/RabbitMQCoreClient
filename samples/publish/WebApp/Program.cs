@@ -1,12 +1,14 @@
 using RabbitMQCoreClient;
 using RabbitMQCoreClient.DependencyInjection;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Just for sending messages.
 builder.Services
-    .AddRabbitMQCoreClient(builder.Configuration.GetSection("RabbitMQ"));
+    .AddRabbitMQCoreClient(builder.Configuration.GetSection("RabbitMQ"))
+    .AddSystemTextJson(opt => opt.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
 var app = builder.Build();
 

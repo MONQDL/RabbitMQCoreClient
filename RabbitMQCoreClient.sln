@@ -22,7 +22,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQCoreClient.ConsoleC
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{1393D7D2-3B09-49BF-A616-B25D1365E58B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQCoreClient.WebApp", "sample\test-playground\RabbitMQCoreClient.WebApp\RabbitMQCoreClient.WebApp.csproj", "{E2A1AB4C-6E1E-455B-A713-4EE5D60C1A6B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQCoreClient.WebApp", "samples\test-playground\RabbitMQCoreClient.WebApp\RabbitMQCoreClient.WebApp.csproj", "{E2A1AB4C-6E1E-455B-A713-4EE5D60C1A6B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "publish", "publish", "{8C256A46-AE61-4D61-A221-F94741C36310}"
 EndProject

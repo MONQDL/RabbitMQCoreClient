@@ -16,17 +16,17 @@ internal sealed class SimpleObjectHandler : MessageHandlerJson<SimpleObj>
 
     protected override JsonTypeInfo<SimpleObj> GetSerializerContext() => SimpleObjContext.Default.SimpleObj;
 
-    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args)
+    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
         _logger.LogInformation("Incoming simple object name: {Name}", message.Name);
 
         return Task.CompletedTask;
     }
 
-    protected override ValueTask OnParseError(string json, Exception e, RabbitMessageEventArgs args)
+    protected override ValueTask OnParseError(string json, Exception e, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
         _logger.LogError(e, "Incoming message can't be deserialized. Error: {ErrorMessage}", e.Message);
-        return base.OnParseError(json, e, args);
+        return base.OnParseError(json, e, args, context);
     }
 }
 

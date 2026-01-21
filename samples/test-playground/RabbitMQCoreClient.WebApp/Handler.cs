@@ -9,7 +9,7 @@ public class Handler : MessageHandlerJson<SimpleObj>
 {
     protected override JsonTypeInfo<SimpleObj> GetSerializerContext() => SimpleObjContext.Default.SimpleObj;
 
-    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args)
+    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
         ProcessMessage(message);
 
@@ -31,7 +31,7 @@ public class RawHandler : IMessageHandler
     public ErrorMessageRouting ErrorMessageRouter => new ErrorMessageRouting();
     public ConsumerHandlerOptions? Options { get; set; }
 
-    public Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args)
+    public Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
         Console.WriteLine(Encoding.UTF8.GetString(message.ToArray()));
         throw new Exception();

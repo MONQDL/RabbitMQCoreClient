@@ -1,4 +1,3 @@
-using RabbitMQCoreClient.DependencyInjection;
 using RabbitMQCoreClient.Models;
 using System.Text;
 using System.Text.Json.Serialization.Metadata;
@@ -24,26 +23,28 @@ public abstract class MessageHandlerJson<TModel> : IMessageHandler
     /// <param name="json">The json.</param>
     /// <param name="e">The exception.</param>
     /// <param name="args">The <see cref="RabbitMessageEventArgs"/> instance containing the event data.</param>
+    /// <param name="context">Handler configuration context.</param>
     /// <returns></returns>
-    protected virtual ValueTask OnParseError(string json, Exception e, RabbitMessageEventArgs args) => default;
+    protected virtual ValueTask OnParseError(string json,
+        Exception e,
+        RabbitMessageEventArgs args,
+        MessageHandlerContext context) => default;
 
     /// <summary>
     /// Process json message.
     /// </summary>
     /// <param name="message">The message deserialized into an object.</param>
     /// <param name="args">The <see cref="RabbitMessageEventArgs" /> instance containing the event data.</param>
+    /// <param name="context">Handler configuration context.</param>
     /// <returns></returns>
-    protected abstract Task HandleMessage(TModel message, RabbitMessageEventArgs args);
+    protected abstract Task HandleMessage(TModel message,
+        RabbitMessageEventArgs args,
+        MessageHandlerContext context);
 
     /// <summary>
     /// Raw Json formatted message.
     /// </summary>
     protected string? RawJson { get; set; }
-
-    /// <summary>
-    /// Gets the options.
-    /// </summary>
-    public ConsumerHandlerOptions? Options { get; set; }
 
     /// <summary>
     /// You must provide TModel json serialization context.
@@ -52,24 +53,24 @@ public abstract class MessageHandlerJson<TModel> : IMessageHandler
     protected abstract JsonTypeInfo<TModel> GetSerializerContext();
 
     /// <inheritdoc />
-    public async Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args)
+    public async Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
         RawJson = Encoding.UTF8.GetString(message.ToArray());
         TModel messageModel;
         try
         {
-            var context = GetSerializerContext();
-            var obj = System.Text.Json.JsonSerializer.Deserialize<TModel>(RawJson, context)
+            var jsonContext = GetSerializerContext();
+            var obj = System.Text.Json.JsonSerializer.Deserialize<TModel>(RawJson, jsonContext)
                 ?? throw new InvalidOperationException("The json parser returns null.");
             messageModel = obj;
         }
         catch (Exception e)
         {
-            await OnParseError(RawJson, e, args);
+            await OnParseError(RawJson, e, args, context);
             // Fall to the top-level exception handler.
             throw;
         }
 
-        await HandleMessage(messageModel, args);
+        await HandleMessage(messageModel, args, context);
     }
 }

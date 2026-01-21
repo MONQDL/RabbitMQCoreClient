@@ -16,7 +16,7 @@ internal sealed class SimpleObjectHandler : MessageHandlerJson<SimpleObj>
 
     protected override JsonTypeInfo<SimpleObj> GetSerializerContext() => SimpleObjContext.Default.SimpleObj;
 
-    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args)
+    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
         _logger.LogInformation("Incoming simple object name: {Name}", message.Name);
 

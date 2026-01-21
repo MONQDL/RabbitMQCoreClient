@@ -1,9 +1,11 @@
+using RabbitMQ.Client.Events;
+
 namespace RabbitMQCoreClient.Models;
 
 /// <summary>
 /// Arguments that used in message consumer methods.
 /// </summary>
-public class RabbitMessageEventArgs : EventArgs
+public class RabbitMessageEventArgs
 {
     /// <summary>
     /// The routing key used when the message was originally published.
