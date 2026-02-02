@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using RabbitMQCoreClient.Configuration.DependencyInjection;
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
+using RabbitMQCoreClient.DependencyInjection;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -16,11 +16,11 @@ public class ExchangeDeclareTests
         var services = new ServiceCollection();
         var builder = new RabbitMQCoreClientBuilder(services);
         var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
-        var exchange = new Exchange(new ExchangeOptions { Name = "test" });
+        var exchange = new Models.Exchange(new ExchangeOptions { Name = "test" });
         const string queueName = "queue1";
         const string deadLetterExchange = "testdeadletter";
 
-        var options = new Queue(queueName, exclusive: true, durable: false)
+        var options = new Models.Queue(queueName, exclusive: true, durable: false)
         {
             RoutingKeys = { "r1", "r2" },
             DeadLetterExchange = deadLetterExchange,
@@ -125,10 +125,10 @@ public class ExchangeDeclareTests
         var services = new ServiceCollection();
         var builder = new RabbitMQCoreClientBuilder(services);
         var consumerBuilder = new RabbitMQCoreClientConsumerBuilder(builder);
-        var exchange = new Exchange(new ExchangeOptions { Name = "test" });
+        var exchange = new Models.Exchange(new ExchangeOptions { Name = "test" });
         const string deadLetterExchange = "testdeadletter";
 
-        var options = new Subscription()
+        var options = new Models.Subscription()
         {
             RoutingKeys = { "r1", "r2" },
             DeadLetterExchange = deadLetterExchange,

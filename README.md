@@ -1,9 +1,7 @@
 # RabbitMQ Client library for .net core applications with Dependency Injection support
 
-Library Version: v6
-
 The library allows you to quickly connect and get started with the RabbitMQ message broker.
-The library serializes and deserializes messages to JSON using _System.Text.Json_ as default or _Newtonsoft.Json_. 
+The library serializes and deserializes messages to JSON using _System.Text.Json_ as default or can use custom serializers.
 The library allows you to work with multiple queues, connected to various exchanges. It allows you to work with subscriptions.
 The library implements a custom errored messages mechanism, using the TTL and the dead message queue.
 
@@ -13,6 +11,10 @@ The library implements a custom errored messages mechanism, using the TTL and th
 Install-Package RabbitMQCoreClient
 ```
 
+## MIGRATION from v6 to v7
+
+See [v7 migration guide](v7-MIGRATION.md)
+
 ## Using the library
 
 The library allows you to both send and receive messages. It makes possible to subscribe to named queues,
@@ -20,7 +22,7 @@ as well as creating short-lived queues to implement the Publish/Subscribe patter
 
 ### Sending messages
 
-The library allows you to configure parameters both from the configuration file or through the Fluent interface.
+The library allows you to configure parameters both from the configuration file or through the fluent interface.
 
 ##### An example of using a configuration file
 
@@ -39,64 +41,75 @@ The library allows you to configure parameters both from the configuration file 
 }
 ```
 
-*Program.cs - console application*
-```
-class Program
+*Program.cs - simple console application*
+
+```csharp
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using RabbitMQCoreClient;
+using RabbitMQCoreClient.DependencyInjection;
+
+Console.WriteLine("Simple console message publishing only example");
+
+var config = new ConfigurationBuilder()
+            .AddJsonFile($"appsettings.json", optional: false)
+            .AddJsonFile($"appsettings.Development.json", optional: true)
+            .Build();
+
+var services = new ServiceCollection();
+services.AddLogging();
+services.AddSingleton(LoggerFactory.Create(x =>
 {
-    static async Task Main(string[] args)
-    {
-        var config = new ConfigurationBuilder()
-                    .AddJsonFile($"appsettings.json", optional: false)
-                    .Build();
+    x.SetMinimumLevel(LogLevel.Trace);
+    x.AddConsole();
+}));
 
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddSingleton(LoggerFactory.Create(x =>
-        {
-            x.SetMinimumLevel(LogLevel.Trace);
-            x.AddConsole();
-        }));
+// Just for sending messages.
+services.AddRabbitMQCoreClient(config.GetSection("RabbitMQ"));
 
-        // Just for sending messages.
-        services
-            .AddRabbitMQCoreClient(config);
-    }
-}
-```
+var provider = services.BuildServiceProvider();
 
-*Startup.cs - ASP.NET Core application*
+var publisher = provider.GetRequiredService<IQueueService>();
+
+await publisher.ConnectAsync();
+
+await publisher.SendAsync("""{ "foo": "bar" }""", "test_key");
 
 ```
-public class Startup
+
+*Program.cs - ASP.NET Core application*
+
+```
+using RabbitMQCoreClient;
+using RabbitMQCoreClient.DependencyInjection;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+// Just for sending messages.
+builder.Services
+    .AddRabbitMQCoreClient(builder.Configuration.GetSection("RabbitMQ"));
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+
+app.MapPost("/send", async (IQueueService publisher) =>
 {
-    public void ConfigureServices(IServiceCollection services)
-    {
-        services.AddControllers();
+    await publisher.SendAsync("""{ "foo": "bar" }""", "test_key");
+    return Results.Ok();
+});
 
-        ...
-
-        // Just for sending messages.
-        services
-            .AddRabbitMQCoreClient(config);
-    }
-}
+app.Run();
 ```
+
+More examples can be found at `samples` folder in this repository.
 
 The `RabbitMQCoreClient.IQueueService` interface is responsible for sending messages.
 
 In order to send a message, it is enough to get the interface `RabbitMQCoreClient.IQueueService` from DI
-and use one of the following methods
-
-```csharp
-ValueTask SendAsync<T>(T obj, string routingKey, string exchange = default, bool decreaseTtl = true, string correlationId = default);
-ValueTask SendJsonAsync(string json, string routingKey, string exchange = default, bool decreaseTtl = true, string correlationId = default);
-ValueTask SendAsync(byte[] obj, IBasicProperties props, string routingKey, string exchange, bool decreaseTtl = true, string correlationId = default);
-
-// Batch sending
-ValueTask SendBatchAsync<T>(IEnumerable<T> objs, string routingKey, string exchange = default, bool decreaseTtl = true, string correlationId = default);
-ValueTask SendJsonBatchAsync(IEnumerable<string> serializedJsonList, string routingKey, string exchange = default, bool decreaseTtl = true, string correlationId = default);
-ValueTask SendBatchAsync(IEnumerable<(byte[] Body, IBasicProperties Props)> objs, string routingKey, string exchange, bool decreaseTtl = true, string correlationId = default);
-```
+and use one of the methods of `SendAsync` or `SendBatchAsync`.
 
 In this case, if you do not specify `exchange`, then the default exchange will be used (from the configuration),
 if configured, otherwise you need to explicitly specify the `exchange` parameter.
@@ -108,7 +121,7 @@ Each time a message is re-sending to the queue, for example, due to an exception
 The message will be sent to the dead message queue if the TTL drops to 0.
 
 If you set the parameter `decreaseTtl = false` in the `SendAsync` methods, then the TTL will not be reduced accordingly, 
-which can lead to an endless message processing cycle.
+which can lead to an endless message processing cycle. `decreaseTtl` only can be used in methods with `BasicProperties` argument.
 
 The default TTL setting can be defined in the configuration (see the Configuration section).
 
@@ -127,26 +140,23 @@ var bodyList = Enumerable.Range(1, 10).Select(x => new SimpleObj { Name = $"test
 await queueService.SendBatchAsync(bodyList, "test_routing_key");
 ```
 
-#### Buffer messages in memory and send them at separate thread
-From the version v5.1.0 there was introduced a new mechanic of the sending messages using separate thread. 
+### Buffer messages in memory and send them batch by timer or count
+
 You can use this feature when you have to send many parallel small messages to the queue (for example from the ASP.NET requests).
 The feature allows you to buffer that messages at the in-memory list and flush them at once using the `SendBatchAsync` method.
 
 To use this feature register it at DI:
 
 ```csharp
-using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+using RabbitMQCoreClient.DependencyInjection;
 
 ...
-services.AddBatchQueueSender();
+services.AddRabbitMQCoreClient(config.GetSection("RabbitMQ"))
+    .AddBatchQueueSender(); // <- Add buffered batch sending.
 ```
 
-Instead of injecting the interface `RabbitMQCoreClient.IQueueService` inject `RabbitMQCoreClient.BatchQueueSender.IQueueEventsBufferEngine`.
-Then use methods to queue your messages. The methods are thread safe.
-```csharp
-Task AddEvent<T>(T @event, string routingKey);
-Task AddEvent<T>(IEnumerable<T> events, string routingKey);
-```
+Instead of injecting the interface `RabbitMQCoreClient.IQueueService` inject `RabbitMQCoreClient.BatchQueueSender.IQueueBufferService`.
+Then use methods `void AddEvent*()` to queue your messages. The methods are thread safe.
 
 You can configure the flush options by Action or IConfiguration. Example of the configuration JSON:
 ```json
@@ -159,102 +169,129 @@ You can configure the flush options by Action or IConfiguration. Example of the 
 ```
 
 ```csharp
-using RabbitMQCoreClient.BatchQueueSender.DependencyInjection;
+using RabbitMQCoreClient.DependencyInjection;
 
 ...
-services.AddBatchQueueSender(configuration.GetSection("QueueFlushSettings"));
+services.AddRabbitMQCoreClient(config.GetSection("RabbitMQ"))
+    .AddBatchQueueSender(configuration.GetSection("QueueFlushSettings"));
+```
+
+#### Extended buffer configuration
+
+If you need you own implementation of sending events from buffer then implement the interface `IEventsWriter` and add it to DI after `.AddBatchQueueSender()`:
+
+```csharp
+builder.Services.AddTransient<IEventsWriter, CustomEventsWriter>();
+```
+
+Implementation example:
+
+```csharp
+namespace RabbitMQCoreClient.BatchQueueSender;
+
+/// <summary>
+/// Implementation of the service for sending events to the data bus.
+/// </summary>
+internal sealed class EventsWriter : IEventsWriter
+{
+    readonly IQueueService _queueService;
+
+    /// <summary>
+    /// Create new object of <see cref="EventsWriter"/>.
+    /// </summary>
+    /// <param name="queueService">Queue publisher.</param>
+    public EventsWriter(IQueueService queueService)
+    {
+        _queueService = queueService;
+    }
+
+    /// <inheritdoc />
+    public async Task WriteBatch(IEnumerable<EventItem> events, string routingKey)
+    {
+        if (!events.Any())
+            return;
+
+        await _queueService.SendBatchAsync(events.Select(x => x.Message), routingKey);
+    }
+}
+```
+
+You also can implement `IEventsHandler` if you want to hook events `OnAfterWriteEvents` or `OnWriteErrors`.
+You must add you custom implementation to DI:
+
+```csharp
+builder.Services.AddTransient<IEventsHandler, CustomEventsHandler>();
+```
+
+##### Custom EventItem model
+
+If you need to add custom properties to EventItem model and handle these properties in `IEventsWriter.WriteBatch`
+you can inherit from `EventItem` and use `IEventsBufferEngine.Add`. There is a ready to use class `EventItemWithSourceObject`.
+This class contains the source object on the basis of which an array of bytes will be calculated to be sent.
+At `IEventsWriter.WriteBatch` cast to the class `EventItemWithSourceObject`.
+Keep in mind that such a mechanism adds additional pressure to the GC.
+
+```csharp
+public async Task WriteBatch(IEnumerable<EventItem> events, string routingKey)
+{
+    ...
+    foreach (EventItem item in events)
+    {
+        if (item is EventItemWithSourceObject eventWithSource)
+        {
+            // Working с item.Source
+        }
+    }
+    ...
+}
 ```
 
 ### Receiving and processing messages
 
-##### Console application
+By default `builder.Services.AddRabbitMQCoreClient(config.GetSection("RabbitMQ"))` adds support of publisher. 
+If you need to consume messages from queues, you must configure consumer.
+
+You can consume messages from queue or from subscription. Queue ca be consumed by multiple consumers (k8s pods) and live long,
+while subscription is exclusive to one consumer and destroys when consumer disconnects from this type of queue.
+
+- Use queue for event processing patterns that must implement parallelization.
+- Use subscription for process commands like replace cached entity with new on every pod.
+
+#### Configuring consumer
+
+You can configure consumer by 2 methods - fluent and from configuration.
+
+Fluent example:
 
 ```
-class Program
-{
-    static readonly AutoResetEvent _closing = new AutoResetEvent(false);
-
-    static async Task Main(string[] args)
-    {
-        Console.OutputEncoding = Encoding.UTF8;
-
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddSingleton(LoggerFactory.Create(x =>
-        {
-            x.SetMinimumLevel(LogLevel.Trace);
-            x.AddConsole();
-        }));
-
-        // For sending and consuming messages full.
-        services
-            .AddRabbitMQCoreClient(opt => opt.Host = "localhost")
-            .AddExchange("default")
-            .AddConsumer()
-            .AddHandler<Handler>("test_routing_key")
-            .AddQueue("my-test-queue")
-            .AddSubscription();
-
-        var serviceProvider = services.BuildServiceProvider();
-        var consumer = serviceProvider.GetRequiredService<IQueueConsumer>();
-        consumer.Start();
-
-        var body = new SimpleObj { Name = "test sending" };
-        await queueService.SendAsync(body, "test_routing_key");
-
-        _closing.WaitOne();
-        Environment.Exit(0);
-    }
-}
+builder.Services
+    .AddRabbitMQCoreClient(opt => opt.Host = "localhost")
+    .AddExchange("default")
+    .AddConsumer()
+    .AddHandler<Handler>("test_routing_key")
+    .AddQueue("my-test-queue")
+    .AddSubscription();
 ```
 
-`_closing.WaitOne ();` is used to prevent the program from terminating immediately after starting.
+IConfiguration example:
 
-The `.Start ();` method does not block the main thread.
-
-##### ASP.NET Core 3.1+
 ```
-public class Startup
-{
-    public Startup(IConfiguration configuration)
+builder.Services
+    .AddRabbitMQCoreClientConsumer(builder.Configuration.GetSection("RabbitMQ"))
+    .AddHandler<Handler>(["test_routing_key"], new ConsumerHandlerOptions
     {
-        Configuration = configuration;
-    }
-
-    public IConfiguration Configuration { get; }
-
-    // This method gets called by the runtime. Use this method to add services to the container.
-    public void ConfigureServices(IServiceCollection services)
+        RetryKey = "test_routing_key_retry"
+    })
+    .AddHandler<Handler>(["test_routing_key_subscription"], new ConsumerHandlerOptions
     {
-        services.AddControllers();
-
-        services
-            .AddRabbitMQCoreClient(opt => opt.Host = "localhost")
-            .AddExchange("default")
-            .AddConsumer()
-            .AddHandler<Handler>("test_routing_key")
-            .AddQueue("my-test-queue");
-    }
-
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifetime)
-    {
-        app.StartRabbitMqCore(lifetime);
-
-        app.UseRouting();
-
-        app.UseEndpoints(endpoints =>
-        {
-            endpoints.MapControllers();
-        });
-    }
-}
+        RetryKey = "test_routing_key_retry"
+    });
 ```
 
-#### `IMessageHandler`
+#### Processing messages with `IMessageHandler`
 In the basic version, messages are received using the implementation of the interface `RabbitMQCoreClient.IMessageHandler`.
 
-The interface requires the implementation of a message handling method `Task HandleMessage(string message, RabbitMessageEventArgs args)`,
-and also the error message router: `ErrorMessageRouting`.
+The interface requires the implementation of a message handling method `Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args, MessageHandlerContext context)`.
 
 In order to specify which routing keys need to be processed by the handler, you need to configure the handler in RabbitMQCoreClient.
 
@@ -263,82 +300,83 @@ Example:
 ```csharp
 public class RawHandler : IMessageHandler
 {
-    public ErrorMessageRouting ErrorMessageRouter => new ErrorMessageRouting();
-    public ConsumerHandlerOptions Options { get; set; }
-    public IMessageSerializer Serializer { get; set; }
-
-    public Task HandleMessage(string message, RabbitMessageEventArgs args)
+    public Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
         Console.WriteLine(message);
 
         return Task.CompletedTask;
     }
 }
+```
 
-class Program
-{
-    static async Task Main(string[] args)
-    {
-        var services = new ServiceCollection();
-        services
-            .AddRabbitMQCoreClientConsumer(config)
-            .AddHandler<RawHandler>("test_routing_key");
+Program.cs partial example
 
-        var serviceProvider = services.BuildServiceProvider();
-        var consumer = serviceProvider.GetRequiredService<IQueueConsumer>();
-        consumer.Start();
-    }
-}
+```
+services
+    .AddRabbitMQCoreClientConsumer(config.GetSection("RabbitMQ"))
+    .AddHandler<SimpleObjectHandler>("test_key"); // <-- configure handler with routing keys.
 ```
 
 **Note**: A message can only be processed by one handler. Although one handler can handle many messages with different routing keys.
 This limitation is due to the routing of erroneous messages in the handler.
 
+More examples can be found at `samples` folder in this repository.
+
 #### `MessageHandlerJson<TModel>`
 
-Since messages in this client are serialized in Json, the interface implementation has been added as an abstract class `RabbitMQCoreClient.MessageHandlerJson<TModel>`,
-which itself deserializes the Json into the model of the desired type. Usage example:
+If your messages is JSON serialized, you can use an abstract class `RabbitMQCoreClient.MessageHandlerJson<TModel>`,
+which itself deserializes the Json into the class model of the desired type.
+
+**Note**: If you want to use this class, you must provide source generated JsonSerializerContext for you class.
+If you want to use your own deserializer, then use your custom `IMessageHandler` implementation.
+
+Usage example:
 
 ```csharp
-public class Handler : MessageHandlerJson<SimpleObj>
+internal sealed class SimpleObjectHandler : MessageHandlerJson<SimpleObj>
 {
-    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args)
+    readonly ILogger<SimpleObjectHandler> _logger;
+
+    public SimpleObjectHandler(ILogger<SimpleObjectHandler> logger)
     {
-        Console.WriteLine(JsonConvert.SerializeObject(message));
+        _logger = logger;
+    }
+
+    protected override JsonTypeInfo<SimpleObj> GetSerializerContext() => SimpleObjContext.Default.SimpleObj;
+
+    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args, MessageHandlerContext context)
+    {
+        _logger.LogInformation("Incoming simple object name: {Name}", message.Name);
+
         return Task.CompletedTask;
     }
 
-    protected override ValueTask OnParseError(string json, Exception e, RabbitMessageEventArgs args)
+    protected override ValueTask OnParseError(string json, Exception e, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
-        Console.WriteLine(e.Message);
-        return base.OnParseError(json, e, args);
+        _logger.LogError(e, "Incoming message can't be deserialized. Error: {ErrorMessage}", e.Message);
+        return base.OnParseError(json, e, args, context);
     }
 }
 
-class Program
+public class SimpleObj
 {
-    static async Task Main(string[] args)
-    {
-        var services = new ServiceCollection();
-        services
-            .AddRabbitMQCoreClientConsumer(config)
-            .AddHandler<RawHandler>("test_routing_key");
+    public required string Name { get; set; }
+}
 
-        var serviceProvider = services.BuildServiceProvider();
-        var consumer = serviceProvider.GetRequiredService<IQueueConsumer>();
-        consumer.Start();
-    }
+[JsonSerializable(typeof(SimpleObj))]
+public partial class SimpleObjContext : JsonSerializerContext
+{
 }
 ```
 
-The `RabbitMQCoreClient.MessageHandlerJson <TModel>` class allows you to define behavior on serialization error
-by overriding the `ValueTask OnParseError (string json, JsonException e, RabbitMessageEventArgs args)` method.
+The `RabbitMQCoreClient.MessageHandlerJson<TModel>` class allows you to define behavior on serialization error
+by overriding the `ValueTask OnParseError (string json, JsonException e, RabbitMessageEventArgs args, MessageHandlerContext context)` method.
 
 #### Routing messages
 
 By default, if the handler throws any exception, then the message will be sent back to the queue with reduced TTL.
 When processing messages, you often need to specify different behavior for different exceptions.
-The `ErrorMessageRouting` message router is used to determine the client's behavior when throwing an exception.
+The `context.ErrorMessageRouter` message router is used to determine the client's behavior when throwing an exception.
 
 There are 2 options for behavior:
 
@@ -351,9 +389,11 @@ If the method succeeds normally, the message will be considered delivered.
 Usage example:
 
 ```csharp
-public class Handler : MessageHandlerJson<SimpleObj>
+internal class Handler : MessageHandlerJson<SimpleObj>
 {
-    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args)
+    protected override JsonTypeInfo<SimpleObj> GetSerializerContext() => SimpleObjContext.Default.SimpleObj;
+
+    protected override Task HandleMessage(SimpleObj message, RabbitMessageEventArgs args, MessageHandlerContext context)
     {
         try
         {
@@ -361,12 +401,12 @@ public class Handler : MessageHandlerJson<SimpleObj>
         }
         catch (ArgumentException e) when (e.Message == "parser failed")
         {
-            ErrorMessageRouter.MoveToDeadLetter();
+            context.ErrorMessageRouter.MoveToDeadLetter();
             throw;
         }
         catch (Exception)
         {
-            ErrorMessageRouter.MoveBackToQueue();
+            context.ErrorMessageRouter.MoveBackToQueue();
             throw;
         }
 
@@ -385,65 +425,48 @@ public class Handler : MessageHandlerJson<SimpleObj>
 
 ### Json Serializers
 
-You can choose what serializer to use. The library supports `System.Text.Json` or `Newtonsoft.Json` serializers.
-To configure the serializer for the sender and consumer you can call `AddNewtonsoftJson()` or `AddSystemTextJson()` method at the configuration stage.
+You can choose what serializer to use to *publish* class objects as messages with serialization. 
+The library by default supports `System.Text.Json` serializer.
 
-Example
-*Program.cs - console application*
-```
-class Program
-{
-    static async Task Main(string[] args)
-    {
-        var config = new ConfigurationBuilder()
-                    .AddJsonFile($"appsettings.json", optional: false)
-                    .Build();
-
-        var services = new ServiceCollection();
-
-        services
-            .AddRabbitMQCoreClient(config)
-            .AddSystemTextJson();
-    }
-}
+Every time you use generic `SendAsync<T>()` methods, serializer is used. For example 
+```csharp
+public static ValueTask SendAsync<T>(
+        this IQueueService service,
+        T obj,
+        string routingKey,
+        string? exchange = default,
+        CancellationToken cancellationToken = default
+        )
+        where T : class
 ```
 
-The default serializer is set to `System.Text.Json` due to improved performance compared to `Newtonsoft.Json`.
-Due to legacy models that contains `JObject` and `JArray` properties the System.Text.Json default serializer has converters of the NewtonsoftJson objects to serialize and deserialize.
+Default reflection based `System.Text.Json` serializer configured with options:
 
-If you want to use different serializers for different message handlers that you can set CustomSerializer at the Handler configuration stage.
-
-Example
-
-Example
-*Program.cs - console application*
 ```
-class Program
-{
-    static async Task Main(string[] args)
-    {
-        var services = new ServiceCollection();
-        services
-            .AddRabbitMQCoreClientConsumer(config)
-            .AddSystemTextJson()
-            .AddHandler<RawHandler>("test_routing_key", new ConsumerHandlerOptions
-                {
-                    CustomSerializer = new NewtonsoftJsonMessageSerializer()
-                }));
-
-        var serviceProvider = services.BuildServiceProvider();
-        var consumer = serviceProvider.GetRequiredService<IQueueConsumer>();
-        consumer.Start();
-    }
-}
+public static System.Text.Json.JsonSerializerOptions DefaultOptions { get; } =
+        new System.Text.Json.JsonSerializerOptions
+        {
+            DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            Converters = { new JsonStringEnumConverter() }
+        };
 ```
 
-#### Custom serializer
+If you want to change this options you can use extension method with options configured
+
+```
+builder.Services
+    .AddRabbitMQCoreClient(builder.Configuration.GetSection("RabbitMQ"))
+    .AddSystemTextJson(opt => opt.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
+```
+
+#### Custom publish serializer
+
 You can make make your own custom serializer. To do that you must implement the `RabbitMQCoreClient.Serializers.IMessageSerializer` interface.
 
 Example:
 
 *CustomSerializer.cs*
+
 ```csharp
 public class CustomMessageSerializer : IMessageSerializer
 {
@@ -475,12 +498,6 @@ public class CustomMessageSerializer : IMessageSerializer
     public string Serialize<TValue>(TValue value)
     {
         return Newtonsoft.Json.JsonConvert.SerializeObject(value, Options);
-    }
-
-    /// <inheritdoc />
-    public TResult? Deserialize<TResult>(string value)
-    {
-        return Newtonsoft.Json.JsonConvert.DeserializeObject<TResult>(value, Options);
     }
 }
 ```
@@ -514,38 +531,30 @@ Use the extension method at the configuration stage.
 
 *Program.cs - console application*
 ```
-class Program
-{
-    static async Task Main(string[] args)
-    {
-        var config = new ConfigurationBuilder()
-                    .AddJsonFile($"appsettings.json", optional: false)
-                    .Build();
-
-        var services = new ServiceCollection();
-
-        services
-            .AddRabbitMQCoreClient(config)
-            .AddCustomSerializer();
-    }
-}
+services
+    .AddRabbitMQCoreClient(config)
+    .AddCustomSerializer();
 ```
 
 #### Quorum queues at cluster environment
-Started from v5.1.0 you can set option `"UseQuorumQueues": true` at root configuration level 
+
+You can set option `"UseQuorumQueues": true` at root configuration level 
 and `"UseQuorum": true` at queue configuration level. This option adds argument `"x-queue-type": "quorum"` on queue declaration
 and can be used at the configured cluster environment.
 
 ### Configuration with file
 
-Configuration can be done either through options or through configuration from appsettings.json.
+Configuration can be done either through options or through configuration from `appsettings.json`.
 
-In version 4.0 of the library, the old (<= v3) queue auto-registration format is still supported. But with limitations:
+There are two formats of configuration: old and new. The old format is less expressive.
+
+The old legacy queue auto-registration format is still supported. But with limitations:
 
 - Only one queue can be automatically registered. The queue is registered at the exchange point "Exchange".
 
 #### SSL support
-Started from v5.2.0 you can set options to configure SSL secured connection to the server. 
+
+You can set options to configure SSL secured connection to the server. 
 To enable the SSL connection you must set `"SslEnabled": true` option at root configuration level.
 
 You can use ssl options to setup the SSL connection:
@@ -560,9 +569,10 @@ Acceptable values:
   - RemoteCertificateChainErrors - System.Security.Cryptography.X509Certificates.X509Chain.ChainStatus has returned a non empty array.
 - __SslVersion__ [optional] - the TLS protocol version. 
 The client will let the OS pick a suitable version by using value `"None"`.
-If this option is unavailable on somne environments or effectively disabled, 
-e.g.see via app context, the client will attempt to fall backto TLSv1.2. The default is `"None"`. 
+If this option is unavailable on some environments or effectively disabled, 
+e.g.see via app context, the client will attempt to fall back to TLSv1.2. The default is `"None"`. 
 You can supply multiple arguments separated by comma. For example: `"SslVersion": "Ssl3,Tls13"`.
+
 Acceptable values:
   - None - allows the operating system to choose the best protocol to use, and to block
 protocols that are not secure. Unless your app has a specific reason not to,
@@ -589,7 +599,7 @@ Set to true to check peer certificate for revocation.
 
 ##### Configuration format
 
-###### Full configuration:
+###### Full configuration example (new fprmat)
 
 ```json
 {
@@ -664,9 +674,10 @@ Set to true to check peer certificate for revocation.
 }
 ```
 
-###### Reduced configuration that is used on a daily basis
+###### Reduced configuration example that is used on a daily basis (new format)
 
 If `Exchanges` is not specified in the `Queues` section, then the queue will use the default exchange.
+You can skip Queues or Subscriptions or both, if you do not have consumers of this types.
 
 ```json
 {

@@ -1,48 +1,47 @@
-﻿using RabbitMQCoreClient.Serializers.JsonConverters;
-using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
-namespace RabbitMQCoreClient.Serializers
+namespace RabbitMQCoreClient.Serializers;
+
+/// <summary>
+/// System.Text.Json message serializer.
+/// </summary>
+public class SystemTextJsonMessageSerializer : IMessageSerializer
 {
-    public class SystemTextJsonMessageSerializer : IMessageSerializer
-    {
-        static readonly System.Text.Json.JsonSerializerOptions _defaultOptions = new System.Text.Json.JsonSerializerOptions
+    /// <summary>
+    /// Default serialization options.
+    /// </summary>
+    public static System.Text.Json.JsonSerializerOptions DefaultOptions { get; } =
+        new System.Text.Json.JsonSerializerOptions
         {
-            PropertyNameCaseInsensitive = true,
-            DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+            DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+            Converters = { new JsonStringEnumConverter() }
         };
 
-        public static System.Text.Json.JsonSerializerOptions DefaultOptions => _defaultOptions;
+    /// <summary>
+    /// Current serialization options.
+    /// </summary>
+    public System.Text.Json.JsonSerializerOptions Options { get; }
 
-        static SystemTextJsonMessageSerializer()
+    /// <summary>
+    /// Creates new object of <see cref="SystemTextJsonMessageSerializer"/>.
+    /// </summary>
+    /// <param name="setupAction">Setup parameters.</param>
+    public SystemTextJsonMessageSerializer(Action<System.Text.Json.JsonSerializerOptions>? setupAction = null)
+    {
+        if (setupAction is null)
         {
-            _defaultOptions.Converters.Add(new JsonStringEnumConverter());
-            _defaultOptions.Converters.Add(new NewtonsoftJObjectConverter());
-            _defaultOptions.Converters.Add(new NewtonsoftJArrayConverter());
-            _defaultOptions.Converters.Add(new NewtonsoftJTokenConverter());
+            Options = DefaultOptions;
         }
-
-        public System.Text.Json.JsonSerializerOptions Options { get; }
-
-        public SystemTextJsonMessageSerializer(Action<System.Text.Json.JsonSerializerOptions>? setupAction = null)
+        else
         {
-            if (setupAction is null)
-            {
-                Options = _defaultOptions;
-            }
-            else
-            {
-                Options = new System.Text.Json.JsonSerializerOptions();
-                setupAction(Options);
-            }
+            Options = new System.Text.Json.JsonSerializerOptions();
+            setupAction(Options);
         }
-
-        /// <inheritdoc />
-        public ReadOnlyMemory<byte> Serialize<TValue>(TValue value) =>
-            System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value, Options);
-
-        /// <inheritdoc />
-        public TResult? Deserialize<TResult>(ReadOnlyMemory<byte> value) =>
-            System.Text.Json.JsonSerializer.Deserialize<TResult>(value.Span, Options);
     }
+
+    /// <inheritdoc />
+    [RequiresUnreferencedCode("Method uses System.Text.Json.JsonSerializer.SerializeToUtf8Bytes witch is incompatible with trimming.")]
+    public ReadOnlyMemory<byte> Serialize<TValue>(TValue value) =>
+        System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(value, Options);
 }

@@ -1,8 +1,9 @@
-using System;
-
 namespace RabbitMQCoreClient.Exceptions;
 
-public class BadMessageException : Exception
+/// <summary>
+/// Create new object of <see cref="BadMessageException"/>.
+/// </summary>
+public sealed class BadMessageException : Exception
 {
     /// <summary>Initializes a new instance of the <see cref="BadMessageException" /> class.</summary>
     public BadMessageException()

@@ -1,122 +1,148 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using RabbitMQCoreClient.Configuration.DependencyInjection.Options;
-using RabbitMQCoreClient.DependencyInjection.ConfigModels;
 using RabbitMQCoreClient.Exceptions;
-using System;
-using System.Linq;
+using RabbitMQCoreClient.Models;
 
-namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats
+namespace RabbitMQCoreClient.DependencyInjection.ConfigFormats;
+
+/// <summary>
+/// Configure RabbitMQCore client builder from IConfiguration.
+/// </summary>
+public static class JsonV2Binder
 {
-    public static class JsonV2Binder
+    const string ExchangesSection = "Exchanges";
+    const string QueuesSection = "Queues";
+    const string SubscriptionsSection = "Subscriptions";
+
+    /// <summary>
+    /// Configure RabbitMQCoreClient with v2 configuration.
+    /// </summary>
+    /// <param name="builder">RabbitMQCoreClient consumer builder.</param>
+    /// <param name="configuration">configuration</param>
+    /// <returns></returns>
+    public static IRabbitMQCoreClientBuilder RegisterV2Configuration(this IRabbitMQCoreClientBuilder builder,
+        IConfiguration configuration)
     {
-        const string ExhangesSection = "Exchanges";
-        const string QueuesSection = "Queues";
-        const string SubscriptionsSection = "Subscriptions";
-
-        public static IRabbitMQCoreClientBuilder RegisterV2Configuration(this IRabbitMQCoreClientBuilder builder,
-            IConfiguration configuration)
-        {
-            if (configuration is null)
-                return builder;
-
-            // Register exchange points.
-            RegisterExchanges(builder, configuration);
-
+        if (configuration is null)
             return builder;
-        }
 
-        static void RegisterExchanges(IRabbitMQCoreClientBuilder builder, IConfiguration configuration)
-        {
-            var exchanges = configuration.GetSection(ExhangesSection);
-            foreach (var exchangeConfig in exchanges.GetChildren())
-            {
-                var options = new ExchangeOptions();
-                exchangeConfig.Bind(options);
-                builder.AddExchange(options.Name, options: options);
-            }
-        }
+        // Register exchange points.
+        RegisterExchanges(builder, configuration);
 
-        public static IRabbitMQCoreClientConsumerBuilder RegisterV2Configuration(this IRabbitMQCoreClientConsumerBuilder builder,
-            IConfiguration configuration)
-        {
-            if (configuration is null)
-                return builder;
+        return builder;
+    }
 
-            // Register queues and link them to exchange points.
-            RegisterQueues<QueueConfig, Queue>(builder,
-                configuration.GetSection(QueuesSection),
-                (qConfig) => Queue.Create(qConfig));
-
-            // Register subscriptions and link them to exchange points.
-            RegisterQueues<SubscriptionConfig, Subscription>(builder,
-                configuration.GetSection(SubscriptionsSection),
-                (qConfig) => Subscription.Create(qConfig));
-
+    /// <summary>
+    /// Configure RabbitMQCoreClient with v2 configuration.
+    /// </summary>
+    /// <param name="builder">RabbitMQCoreClient consumer builder.</param>
+    /// <param name="configuration">configuration</param>
+    /// <returns></returns>
+    public static IRabbitMQCoreClientConsumerBuilder RegisterV2Configuration(this IRabbitMQCoreClientConsumerBuilder builder,
+        IConfiguration configuration)
+    {
+        if (configuration is null)
             return builder;
-        }
 
-        static void RegisterQueues<TConfig, TQueue>(IRabbitMQCoreClientConsumerBuilder builder,
-            IConfigurationSection? queuesConfiguration,
-            Func<TConfig, TQueue> createQueue)
-            where TConfig : new()
-            where TQueue : QueueBase
+        // Register queues and link them to exchange points.
+        RegisterQueues<QueueConfig, Queue>(builder,
+            configuration.GetSection(QueuesSection),
+            (qConfig) => Queue.Create(qConfig));
+
+        // Register subscriptions and link them to exchange points.
+        RegisterQueues<SubscriptionConfig, Subscription>(builder,
+            configuration.GetSection(SubscriptionsSection),
+            (qConfig) => Subscription.Create(qConfig));
+
+        return builder;
+    }
+
+    static void RegisterExchanges(IRabbitMQCoreClientBuilder builder, IConfiguration configuration)
+    {
+        var exchanges = configuration.GetSection(ExchangesSection);
+        foreach (var exchangeConfig in exchanges.GetChildren())
         {
-            if (queuesConfiguration is null)
-                return;
+            var options = new ExchangeOptions();
+            exchangeConfig.Bind(options);
+            builder.AddExchange(options.Name, options: options);
+        }
+    }
 
-            foreach (var queueConfig in queuesConfiguration.GetChildren())
+    static void RegisterQueues<TConfig, TQueue>(IRabbitMQCoreClientConsumerBuilder builder,
+        IConfigurationSection? queuesConfiguration,
+        Func<TConfig, TQueue> createQueue)
+        where TConfig : new()
+        where TQueue : QueueBase
+    {
+        if (queuesConfiguration is null)
+            return;
+
+        foreach (var queueConfig in queuesConfiguration.GetChildren())
+        {
+            TConfig q;
+            // Support of source generators.
+            if (typeof(TConfig) == typeof(QueueConfig))
             {
-                var q = BindConfig<TConfig>(queueConfig);
-
-                var queue = createQueue(q);
-
-                RegisterQueue(builder, queue);
+                q = (TConfig)(object)BindQueueConfig(queueConfig);
             }
-        }
-
-        static void RegisterQueue<TQueue>(IRabbitMQCoreClientConsumerBuilder builder, TQueue queue)
-            where TQueue : QueueBase
-        {
-            if (!queue.Exchanges.Any())
+            else if (typeof(TConfig) == typeof(SubscriptionConfig))
             {
-                var defaultExchange = builder.Builder.DefaultExchange;
-                if (defaultExchange is null)
-                    throw new QueueBindException($"Queue {queue.Name} has no configured exchanges and the Default Exchange not found.");
-                queue.Exchanges.Add(defaultExchange.Name);
+                q = (TConfig)(object)BindSubscriptionConfig(queueConfig);
             }
             else
-            {
-                // Checking echange points declared in queue in configured "Exchanges".
-                foreach (var exchangeName in queue.Exchanges)
-                {
-                    var exchange = builder.Builder.Exchanges.FirstOrDefault(x => x.Name == exchangeName);
-                    if (exchange is null)
-                        throw new ClientConfigurationException($"The exchange {exchangeName} configured in queue {queue.Name} " +
-                            $"not found in Exchanges section.");
-                }
-            }
+                throw new ClientConfigurationException("Configuration supports only QueueConfig or SubscriptionConfig classes");
 
-            AddQueue(builder, queue);
+            var queue = createQueue(q);
+
+            RegisterQueue(builder, queue);
+        }
+    }
+
+    static void RegisterQueue<TQueue>(IRabbitMQCoreClientConsumerBuilder builder, TQueue queue)
+        where TQueue : QueueBase
+    {
+        if (queue.Exchanges.Count == 0)
+        {
+            var defaultExchange = builder.Builder.DefaultExchange
+                ?? throw new QueueBindException($"Queue {queue.Name} has no configured exchanges and the Default Exchange not found.");
+            queue.Exchanges.Add(defaultExchange.Name);
+        }
+        else
+        {
+            // Checking exchange points declared in queue in configured "Exchanges".
+            foreach (var exchangeName in queue.Exchanges)
+            {
+                if (!builder.Builder.Exchanges.Any(x => x.Name == exchangeName))
+                    throw new ClientConfigurationException($"The exchange {exchangeName} configured in queue {queue.Name} " +
+                        $"not found in Exchanges section.");
+            }
         }
 
-        static TConfig BindConfig<TConfig>(IConfigurationSection queueConfig)
-            where TConfig : new()
-        {
-            var q = new TConfig();
-            queueConfig.Bind(q);
-            return q;
-        }
+        AddQueue(builder, queue);
+    }
 
-        static void AddQueue<T>(IRabbitMQCoreClientConsumerBuilder builder, T queue)
-            where T : QueueBase
+    static QueueConfig BindQueueConfig(IConfigurationSection queueConfig)
+    {
+        var config = new QueueConfig();
+        queueConfig.Bind(config);
+        return config;
+    }
+
+    static SubscriptionConfig BindSubscriptionConfig(IConfigurationSection queueConfig)
+    {
+        var config = new SubscriptionConfig();
+        queueConfig.Bind(config);
+        return config;
+    }
+
+    static void AddQueue<T>(IRabbitMQCoreClientConsumerBuilder builder, T queue)
+        where T : QueueBase
+    {
+        // So-so solution, but without dubbing.
+        switch (queue)
         {
-            // So-so solution, but without dubbing.
-            switch (queue)
-            {
-                case Queue q: builder.AddQueue(q); break;
-                case Subscription q: builder.AddSubscription(q); break;
-            }
+            case Queue q: builder.AddQueue(q); break;
+            case Subscription q: builder.AddSubscription(q); break;
         }
     }
 }
