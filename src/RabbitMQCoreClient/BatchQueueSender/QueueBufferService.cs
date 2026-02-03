@@ -28,9 +28,9 @@ internal sealed class QueueBufferService : IQueueBufferService, IDisposable
     /// <inheritdoc />
     public IMessageSerializer Serializer { get; }
 
-    const string ErrorWhileWritingEvents = "There was an error while writing events. Details: {ErrorMessage}";
-    const string ErrorOnAfterWriteEvents = "There was an error execution OnAfterWriteEvents method. Details: {ErrorMessage}";
-    const string ErrorOnWriteErrors = "There was an error execution OnWriteErrors method. Details: {ErrorMessage}";
+    const string ErrorWhileWritingEvents = "There was an error while writing events.";
+    const string ErrorOnAfterWriteEvents = "There was an error execution OnAfterWriteEvents method.";
+    const string ErrorOnWriteErrors = "There was an error execution OnWriteErrors method.";
 
     /// <summary>
     /// The implementation constructor of the event storage buffer.
@@ -149,7 +149,7 @@ internal sealed class QueueBufferService : IQueueBufferService, IDisposable
                     errorEvents ??= new List<EventItem>();
                     foreach (var innerEx in task.Exception.InnerExceptions)
                     {
-                        _log?.LogError(innerEx, ErrorWhileWritingEvents, innerEx.Message);
+                        _log?.LogError(innerEx, ErrorWhileWritingEvents);
                         // Log exception
                         errorEvents.AddRange(eventsGroup);
                     }
@@ -165,7 +165,8 @@ internal sealed class QueueBufferService : IQueueBufferService, IDisposable
         {
             ArrayPool<EventItem>.Shared.Return(array);
 
-            _log?.LogInformation("Buffer has written '{RecordsCount}' records to the database at '{ElapsedMilliseconds}' ms.",
+            if (_log?.IsEnabled(LogLevel.Debug) == true)
+                _log?.LogDebug("RabbitMQ Buffer has sent '{EventsCount}' events to the queue bus at '{ElapsedMilliseconds}' ms.",
                 count, sw.ElapsedMilliseconds);
         }
 
@@ -176,7 +177,7 @@ internal sealed class QueueBufferService : IQueueBufferService, IDisposable
         }
         catch (Exception e)
         {
-            _log?.LogError(e, ErrorOnAfterWriteEvents, e.Message);
+            _log?.LogError(e, ErrorOnAfterWriteEvents);
         }
 
         try
@@ -186,7 +187,7 @@ internal sealed class QueueBufferService : IQueueBufferService, IDisposable
         }
         catch (Exception e)
         {
-            _log?.LogError(e, ErrorOnWriteErrors, e.Message);
+            _log?.LogError(e, ErrorOnWriteErrors);
         }
     }
 

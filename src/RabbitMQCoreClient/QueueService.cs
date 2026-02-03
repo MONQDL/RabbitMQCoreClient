@@ -249,8 +249,9 @@ public sealed class QueueService : IQueueService
                              mandatory: false, // Just not reacting when no queue is subscribed for key.
                              basicProperties: props,
                              body: obj);
-        _log.LogDebug("Sent raw message to exchange '{Exchange}' with routing key '{RoutingKey}'.",
-            exchange, routingKey);
+        if (_log.IsEnabled(LogLevel.Debug))
+            _log.LogDebug("Sent raw message to exchange '{Exchange}' with routing key '{RoutingKey}'.",
+                exchange, routingKey);
     }
 
     #endregion
@@ -313,8 +314,9 @@ public sealed class QueueService : IQueueService
         // evenly divisible by batch size.
         await MaybeAwaitPublishes(publishTasks, 0);
 
-        _log.LogDebug("Sent raw messages batch to exchange '{Exchange}' " +
-            "with routing key '{RoutingKey}'.", exchange, routingKey);
+        if (_log.IsEnabled(LogLevel.Debug))
+            _log.LogDebug("Sent raw messages batch to exchange '{Exchange}' " +
+                "with routing key '{RoutingKey}'.", exchange, routingKey);
     }
 
     /// <inheritdoc />
@@ -373,8 +375,9 @@ public sealed class QueueService : IQueueService
         // evenly divisible by batch size.
         await MaybeAwaitPublishes(publishTasks, 0);
 
-        _log.LogDebug("Sent raw messages batch to exchange '{Exchange}' " +
-            "with routing key '{RoutingKey}'.", exchange, routingKey);
+        if (_log.IsEnabled(LogLevel.Debug))
+            _log.LogDebug("Sent raw messages batch to exchange '{Exchange}' " +
+                "with routing key '{RoutingKey}'.", exchange, routingKey);
     }
 
     async Task MaybeAwaitPublishes(List<ValueTask> publishTasks, int batchSize)

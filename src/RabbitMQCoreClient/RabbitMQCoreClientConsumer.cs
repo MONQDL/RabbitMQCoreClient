@@ -128,7 +128,8 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
 
         var rabbitArgs = new RabbitMessageEventArgs(@event.RoutingKey, @event.ConsumerTag);
 
-        _log.LogDebug("New message received with deliveryTag='{DeliveryTag}'.", @event.DeliveryTag);
+        if (_log.IsEnabled(LogLevel.Debug))
+            _log.LogDebug("New message received with deliveryTag='{DeliveryTag}'.", @event.DeliveryTag);
 
         // Send a message to the death queue if ttl is over.
         if (@event.BasicProperties.Headers?.TryGetValue(AppConstants.RabbitMQHeaders.TtlHeader, out var ttl) == true
@@ -136,7 +137,8 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
             && ttlInt <= 0)
         {
             await ConsumeChannel.BasicNackAsync(@event.DeliveryTag, false, false, _serviceLifetimeToken);
-            _log.LogDebug("Message was rejected due to low ttl.");
+            if (_log.IsEnabled(LogLevel.Debug))
+                _log.LogDebug("Message was rejected due to low ttl.");
             return;
         }
 
@@ -159,13 +161,15 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
 
         var handlerContext = new MessageHandlerContext(new(), handlerOptions);
 
-        _log.LogDebug("Created scope for handler type '{TypeName}'. Start processing message.",
-            handler.GetType().Name);
+        if (_log.IsEnabled(LogLevel.Debug))
+            _log.LogDebug("Created scope for handler type '{TypeName}'. Start processing message.",
+                handler.GetType().Name);
         try
         {
             await handler.HandleMessage(@event.Body, rabbitArgs, handlerContext);
             await ConsumeChannel.BasicAckAsync(@event.DeliveryTag, false, _serviceLifetimeToken);
-            _log.LogDebug("Message successfully processed by handler type '{TypeName}' " +
+            if (_log.IsEnabled(LogLevel.Debug))
+                _log.LogDebug("Message successfully processed by handler type '{TypeName}' " +
                           "with deliveryTag='{DeliveryTag}'.", handler?.GetType().Name, @event.DeliveryTag);
         }
         catch (Exception e)
@@ -258,8 +262,9 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
 
     async Task RejectDueToNoHandler(BasicDeliverEventArgs ea)
     {
-        _log.LogDebug("Message was rejected due to no handler configured for the routing key '{RoutingKey}'.",
-            ea.RoutingKey);
+        if (_log.IsEnabled(LogLevel.Debug))
+            _log.LogDebug("Message was rejected due to no handler configured for the routing key '{RoutingKey}'.",
+                ea.RoutingKey);
 
         if (ConsumeChannel != null)
             await ConsumeChannel.BasicNackAsync(ea.DeliveryTag, false, false, _serviceLifetimeToken);
