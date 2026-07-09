@@ -19,6 +19,11 @@ public class RabbitMessageEventArgs
     public string ConsumerTag { get; set; }
 
     /// <summary>
+    /// The message headers from BasicProperties, including distributed tracing context.
+    /// </summary>
+    public IReadOnlyDictionary<string, object?>? Headers { get; init; }
+
+    /// <summary>
     /// Create new object of <see cref="RabbitMessageEventArgs"/>.
     /// </summary>
     /// <param name="routingKey">The routing key used when the message was originally published.</param>

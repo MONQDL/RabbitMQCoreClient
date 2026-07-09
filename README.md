@@ -15,6 +15,63 @@ Install-Package RabbitMQCoreClient
 
 See [v7 migration guide](v7-MIGRATION.md)
 
+## Distributed Tracing (OpenTelemetry)
+
+Starting from v7.1, the library supports distributed tracing via OpenTelemetry.
+
+### How it works
+
+Tracing is built on top of RabbitMQ.Client v7 built-in tracing plus a library-provided handler span:
+
+- **On publish**: RabbitMQ.Client creates a `Producer` span (`RabbitMQ.Client.Publisher`) and injects W3C `traceparent`/`tracestate` headers
+- **On consume**: RabbitMQ.Client creates a `Consumer` span (`RabbitMQ.Client.Subscriber`) and extracts trace context from message headers
+- **On handle**: The library creates a `Handler` span (`RabbitMQCoreClient`) for each message handler execution, with error status and exception details on failure
+
+This enables end-to-end distributed tracing across your microservice ecosystem:
+
+```
+HTTP Request → ASP.NET Span → Publish to RabbitMQ → Consumer Span → Handler Span → HTTP/gRPC calls → ...
+```
+
+### Requirements
+
+- `OpenTelemetry.Extensions.Hosting` package in your application
+- Add all three sources in your tracing configuration
+
+### Example configuration
+
+```csharp
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddSource("RabbitMQ.Client.Publisher")   // publish spans
+        .AddSource("RabbitMQ.Client.Subscriber")  // consume spans
+        .AddSource("RabbitMQCoreClient")          // handler spans with error details
+        .AddOtlpExporter());
+```
+
+### Trace context in message handlers
+
+The `RabbitMessageEventArgs` includes the `Headers` property with trace context:
+
+```csharp
+public class MyHandler : IMessageHandler
+{
+    public Task HandleMessage(ReadOnlyMemory<byte> message, RabbitMessageEventArgs args, MessageHandlerContext context)
+    {
+        // args.Headers contains traceparent/tracestate if present
+        var traceId = Activity.Current?.TraceId.ToString();
+
+        return Task.CompletedTask;
+    }
+}
+```
+
+### No code changes required
+
+If you are already using `Monq.Core.BasicDotNetMicroservice` with OpenTelemetry configured, no additional changes are needed. Trace context is automatically propagated on publish and extracted on consume.
+
 ## Using the library
 
 The library allows you to both send and receive messages. It makes possible to subscribe to named queues,
