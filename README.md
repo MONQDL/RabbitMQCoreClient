@@ -68,10 +68,6 @@ public class MyHandler : IMessageHandler
 }
 ```
 
-### No code changes required
-
-If you are already using `Monq.Core.BasicDotNetMicroservice` with OpenTelemetry configured, no additional changes are needed. Trace context is automatically propagated on publish and extracted on consume.
-
 ## Using the library
 
 The library allows you to both send and receive messages. It makes possible to subscribe to named queues,

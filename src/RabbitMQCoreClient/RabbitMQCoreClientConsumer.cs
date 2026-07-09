@@ -191,7 +191,9 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
         catch (Exception e)
         {
             handlerActivity?.SetStatus(ActivityStatusCode.Error, e.Message);
+#if NET9_0_OR_GREATER
             handlerActivity?.AddException(e);
+#endif
 
             // Process the message depending on the given route.
             switch (handlerContext.ErrorMessageRouter.Route)
