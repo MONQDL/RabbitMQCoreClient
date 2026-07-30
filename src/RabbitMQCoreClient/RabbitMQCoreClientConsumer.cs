@@ -166,15 +166,17 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
 
         var handlerContext = new MessageHandlerContext(new(), handlerOptions);
 
+        var handlerName = handler.GetType().Name;
         if (_log.IsEnabled(LogLevel.Debug))
             _log.LogDebug("Created scope for handler type '{TypeName}'. Start processing message.",
-                handler.GetType().Name);
+                handlerName);
 
-        using var handlerActivity = HandlerActivitySource.Source.StartActivity(
-            $"handle {handler.GetType().Name}",
+        using var handlerActivity = RabbitMqActivitySource.Source.StartActivity(
+            $"handle {handlerName}",
             ActivityKind.Internal);
         handlerActivity?.SetTag("messaging.system", "rabbitmq");
         handlerActivity?.SetTag("messaging.operation.type", "process");
+        handlerActivity?.SetTag("messaging.operation.handler", handlerName);
         handlerActivity?.SetTag("messaging.destination.name", @event.Exchange);
         handlerActivity?.SetTag("messaging.rabbitmq.routing_key", @event.RoutingKey);
         handlerActivity?.SetTag("messaging.rabbitmq.consumer_tag", @event.ConsumerTag);
