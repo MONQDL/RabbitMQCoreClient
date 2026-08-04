@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace RabbitMQCoreClient.BatchQueueSender;
 
 /// <summary>
@@ -26,6 +28,11 @@ public class EventItem
     /// The routing key the message to be send to queue.
     /// </summary>
     public string RoutingKey { get; }
+
+    /// <summary>
+    /// The Parent Open Telemetry activity context if present.
+    /// </summary>
+    public ActivityContext ParentContext { get; set; }
 }
 
 /// <summary>

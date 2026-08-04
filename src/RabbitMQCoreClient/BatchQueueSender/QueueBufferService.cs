@@ -57,6 +57,10 @@ internal sealed class QueueBufferService : IQueueBufferService, IDisposable
     {
         lock (_syncRoot)
         {
+            // Read current activity and save it to be able to send batch messages with different parent activities.
+            var currentActivity = Activity.Current;
+            item.ParentContext = currentActivity?.Context ?? default;
+
             _buffer.Enqueue(item);
             _count++;
 

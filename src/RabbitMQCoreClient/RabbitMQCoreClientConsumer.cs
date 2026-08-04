@@ -3,9 +3,11 @@ using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQCoreClient.Configuration;
+using RabbitMQCoreClient.Diagnostics;
 using RabbitMQCoreClient.Events;
 using RabbitMQCoreClient.Exceptions;
 using RabbitMQCoreClient.Models;
+using System.Diagnostics;
 using System.Net;
 
 namespace RabbitMQCoreClient;
@@ -126,7 +128,10 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
         if (ConsumeChannel is null)
             throw new NotConnectedException("ConsumeChannel is null");
 
-        var rabbitArgs = new RabbitMessageEventArgs(@event.RoutingKey, @event.ConsumerTag);
+        var rabbitArgs = new RabbitMessageEventArgs(@event.RoutingKey, @event.ConsumerTag)
+        {
+            Headers = @event.BasicProperties.Headers as IReadOnlyDictionary<string, object?>
+        };
 
         if (_log.IsEnabled(LogLevel.Debug))
             _log.LogDebug("New message received with deliveryTag='{DeliveryTag}'.", @event.DeliveryTag);
@@ -161,9 +166,22 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
 
         var handlerContext = new MessageHandlerContext(new(), handlerOptions);
 
+        var handlerName = handler.GetType().Name;
         if (_log.IsEnabled(LogLevel.Debug))
             _log.LogDebug("Created scope for handler type '{TypeName}'. Start processing message.",
-                handler.GetType().Name);
+                handlerName);
+
+        using var handlerActivity = RabbitMqActivitySource.Source.StartActivity(
+            $"handle {handlerName}",
+            ActivityKind.Internal);
+        handlerActivity?.SetTag("messaging.system", "rabbitmq");
+        handlerActivity?.SetTag("messaging.operation.type", "process");
+        handlerActivity?.SetTag("messaging.operation.handler", handlerName);
+        handlerActivity?.SetTag("messaging.destination.name", @event.Exchange);
+        handlerActivity?.SetTag("messaging.rabbitmq.routing_key", @event.RoutingKey);
+        handlerActivity?.SetTag("messaging.rabbitmq.consumer_tag", @event.ConsumerTag);
+        handlerActivity?.SetTag("messaging.rabbitmq.delivery_tag", @event.DeliveryTag);
+
         try
         {
             await handler.HandleMessage(@event.Body, rabbitArgs, handlerContext);
@@ -174,6 +192,11 @@ public sealed class RabbitMQCoreClientConsumer : IQueueConsumer
         }
         catch (Exception e)
         {
+            handlerActivity?.SetStatus(ActivityStatusCode.Error, e.Message);
+#if NET9_0_OR_GREATER
+            handlerActivity?.AddException(e);
+#endif
+
             // Process the message depending on the given route.
             switch (handlerContext.ErrorMessageRouter.Route)
             {
